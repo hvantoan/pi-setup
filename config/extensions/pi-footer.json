@@ -19,8 +19,10 @@
     ],
     [
       {
-        "type": "context-length",
+        "type": "context-bar",
         "options": {
+          "contextBarMode": "medium",
+          "contextConditionalColors": true,
           "hideWhenZero": true
         }
       },
