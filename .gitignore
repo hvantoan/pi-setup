@@ -7,6 +7,3 @@ pi-setup-install.log
 
 # Rác hệ điều hành
 .DS_Store
-
-# Thư mục font người dùng tự đặt vào (không phải nội dung setup)
-fonts/

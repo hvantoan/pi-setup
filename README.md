@@ -56,6 +56,10 @@ zuey-pi-setup/
 ├── README.md                        ← bạn đang đọc
 ├── docs/
 │   └── pi-setup-migration.md        hướng dẫn chi tiết + số liệu kiểm chứng
+├── fonts/                           JetBrains Mono 1.0.2 (font terminal, OFL-1.1)
+│   ├── README.md                    nguồn gốc, cách cài, cảnh báo Nerd Font
+│   ├── LICENSE.txt                  SIL Open Font License 1.1
+│   └── JetBrainsMono-1.0.2/         ttf/ (1 MB, dùng cho terminal) + web/ (2 MB, cho web)
 ├── scripts/
 │   ├── pi-setup-backup.sh           đóng gói setup hiện tại của máy đang chạy
 │   └── pi-setup-restore.sh          dựng lại setup trên máy mới
@@ -150,6 +154,8 @@ Model khác thì thang chia khác — context 1M ở 25% ra `[████░░
 | Hiện token thô thay vì bar | đổi `"type": "context-bar"` → `"context-length"`, hoặc dùng `"context-remaining"` / `"context-window"` |
 
 Dòng 2 của statusline hiện tại: `context-bar` → `cache-hit-rate` → 2 event widget (`cache_ttl`, `tps` do `pi-footer-cache-tps.ts` đẩy vào).
+
+> Config dùng `"iconMode": "nerd"` nên terminal cần **Nerd Font** (bản patch) mới hiện đủ icon. Trong `fonts/` có JetBrains Mono **gốc** (không patch) — xem [`fonts/README.md`](./fonts/README.md) để biết cách cài bản Nerd Font hoặc đổi sang `emoji`/`text`.
 
 ---
 
