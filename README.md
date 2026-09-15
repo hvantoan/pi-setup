@@ -6,6 +6,8 @@
 
 pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-15
 
+**Tiếng Việt** · [English](./README.en.md)
+
 </div>
 
 ---
