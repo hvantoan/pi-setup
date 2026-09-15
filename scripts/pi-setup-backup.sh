@@ -2,19 +2,25 @@
 #
 # pi-setup-backup.sh — đóng gói phần "setup" của pi để mang sang máy khác
 #
-# Mặc định chỉ lấy SETUP (không lấy state/lịch sử):
+# Mặc định chỉ lấy SETUP (không lấy state/secret/lịch sử):
 #   settings.json (manifest toàn bộ extension), APPEND_SYSTEM.md,
 #   models-store.json, extensions/
-# Phần STATE (skills/, memory/, missions/) chỉ lấy khi truyền --with-state.
-#   → missions/ chứa lịch sử mission theo project (có thể có tên khách hàng,
-#     đường dẫn nội bộ) nên KHÔNG nằm trong bản mặc định.
 #
-# KHÔNG bao giờ lấy: auth.json (secret), npm/ (cache, pi tự cài lại), sessions/
+# Các phần còn lại phải opt-in từng cái:
+#   --auth       auth.json      ⚠ CHỨA CREDENTIAL (API key + OAuth token)
+#   --skills     skills/        (dereference symlink → backup tự chứa)
+#   --hooks      các thư mục hooks trong ~/.pi/agent
+#   --memory     memory/
+#   --missions   missions/      state của pi-goal-x (có thể chứa tên khách hàng)
+#   --sessions   sessions/      lịch sử chat (thường vài chục MB)
+#   --with-state = --skills --memory --missions
+#
+# KHÔNG bao giờ lấy: npm/ (cache, pi tự cài lại)
 #
 # Dùng:
-#   ./pi-setup-backup.sh                          # → <repo>/pi-setup-portable.tar.gz
-#   ./pi-setup-backup.sh --config-dir config      # → ghi plain file vào config/ (để commit)
-#   ./pi-setup-backup.sh --with-state             # kèm skills/ memory/ missions/
+#   ./pi-setup-backup.sh                              # → <repo>/pi-setup-portable.tar.gz
+#   ./pi-setup-backup.sh --config-dir config          # → ghi plain file vào config/ (để commit)
+#   ./pi-setup-backup.sh --skills --hooks -o ~/pi.tar.gz
 #
 set -euo pipefail
 
@@ -29,18 +35,41 @@ AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 
 # Setup: đủ để dựng lại y hệt bộ extension.
 ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models-store.json extensions)
-# State: dữ liệu theo máy/project — phải opt-in.
-ITEMS_STATE=(skills memory missions)
 
 OUT="$ROOT/pi-setup-portable.tar.gz"
 CONFIG_DIR=""
-WITH_STATE=0
 QUIET=0
 DRY_RUN=0
+
+FLAG_AUTH=0
+FLAG_SKILLS=0
+FLAG_HOOKS=0
+FLAG_MEMORY=0
+FLAG_MISSIONS=0
+FLAG_SESSIONS=0
+FLAG_NO_STATUSLINE=0
+
+# File cấu hình statusline. Mặc định ĐƯỢC backup (nằm trong extensions/).
+# --no-statusline loại chúng ra. Danh sách đầy đủ ở CONFIG_CANDIDATES bên dưới.
 
 # Pattern nhạy cảm — chặn trường hợp vô tình đưa secret vào artifact.
 SECRET_RE='((^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{32,}|ghp_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|"?(api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|password)"?[[:space:]]*[:=][[:space:]]*"[^"]{12,}")'
 
+# Cấu hình của các extension: nằm trong extensions/ nên MẬC ĐỊNH đã được backup.
+# Script báo cáo tường minh để bạn biết cái nào có/không; --no-statusline loại nhóm statusline.
+# định dạng: <đường dẫn tương đối trong AGENT_DIR>|<nhãn>|<có bị --no-statusline loại không>
+CONFIG_CANDIDATES=(
+	"extensions/pi-footer.json|statusline (pi-footer)|yes"
+	"extensions/powerline-footer/theme.json|statusline (pi-powerline-footer)|yes"
+	"extensions/provider-fallback.json|fallback (pi-provider-fallback)|no"
+)
+
+CONFIG_FOUND=()
+STATUSLINE_FOUND=()
+SKIP=()
+# Các đường dẫn được --hooks yêu cầu rõ → không bị .pi-setup-exclude xoá.
+# Khai báo Ở ĐÂY (không khai báo lại ở chỗ prune_excluded, sẽ reset mất giá trị).
+PROTECT=()
 info() { [ "$QUIET" -eq 1 ] || printf '%s\n' "$*"; }
 emit() { printf '%s\n' "$*"; }
 warn() { printf '⚠  %s\n' "$*" >&2; }
@@ -53,7 +82,18 @@ Dùng: pi-setup-backup.sh [tùy chọn]
   -o, --output FILE     File tarball đầu ra (mặc định: <repo>/pi-setup-portable.tar.gz)
       --config-dir DIR  Ghi plain file vào DIR (dùng cho thư mục config/ được git track)
                         Tôn trọng <DIR>/.pi-setup-exclude (glob loại trừ, mỗi dòng 1 mục)
-      --with-state      Kèm cả state: skills/, memory/, missions/  (mặc định KHÔNG)
+
+Opt-in thêm (mặc định KHÔNG lấy):
+      --auth            auth.json      ⚠ chứa credential — không đưa lên nơi công khai
+      --skills          skills/        dereference symlink → backup tự chứa (24 MB)
+      --hooks           thư mục hooks trong ~/.pi/agent (không đụng ~/.claude)
+      --memory          memory/
+      --missions        missions/      state pi-goal-x (có thể chứa tên khách hàng)
+      --sessions        sessions/      lịch sử chat (~56 MB)
+      --with-state      = --skills --memory --missions
+      --no-statusline   KHÔNG backup cấu hình statusline (mặc định LẤY)
+                        (extensions/pi-footer.json, powerline-footer/theme.json)
+
       --dry-run         Chỉ in ra sẽ làm gì
   -q, --quiet           Chỉ in 1 dòng tóm tắt
   -h, --help            In hướng dẫn này
@@ -67,7 +107,14 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 		-o | --output) [ $# -ge 2 ] || die "-o cần tham số FILE"; OUT="$2"; shift 2 ;;
 		--config-dir) [ $# -ge 2 ] || die "--config-dir cần tham số DIR"; CONFIG_DIR="$2"; shift 2 ;;
-		--with-state) WITH_STATE=1; shift ;;
+		--auth) FLAG_AUTH=1; shift ;;
+		--skills) FLAG_SKILLS=1; shift ;;
+		--hooks) FLAG_HOOKS=1; shift ;;
+		--memory) FLAG_MEMORY=1; shift ;;
+		--missions) FLAG_MISSIONS=1; shift ;;
+		--sessions) FLAG_SESSIONS=1; shift ;;
+		--with-state) FLAG_SKILLS=1; FLAG_MEMORY=1; FLAG_MISSIONS=1; shift ;;
+		--no-statusline) FLAG_NO_STATUSLINE=1; shift ;;
 		--dry-run) DRY_RUN=1; shift ;;
 		-q | --quiet) QUIET=1; shift ;;
 		-h | --help) usage; exit 0 ;;
@@ -78,46 +125,178 @@ done
 command -v tar >/dev/null 2>&1 || die "thiếu lệnh 'tar'"
 [ -d "$AGENT_DIR" ] || die "không thấy thư mục config: $AGENT_DIR"
 
-ITEMS=("${ITEMS_SETUP[@]}")
-[ "$WITH_STATE" -eq 1 ] && ITEMS+=("${ITEMS_STATE[@]}")
-
-INCLUDE=()
-for item in "${ITEMS[@]}"; do
-	if [ -e "$AGENT_DIR/$item" ]; then
-		INCLUDE+=("$item")
+# --- Dựng danh sách mục cần lấy ---
+# Quét config extension phải làm SAU khi parse tham số: --no-statusline quyết định SKIP
+# (đặt block này trước vòng parse là bug — flag lúc đó vẫn = 0).
+for entry in "${CONFIG_CANDIDATES[@]}"; do
+	path="${entry%%|*}"
+	rest="${entry#*|}"
+	label="${rest%%|*}"
+	is_statusline="${rest##*|}"
+	if [ -e "$AGENT_DIR/$path" ]; then
+		CONFIG_FOUND+=("$label: $path")
+		if [ "$is_statusline" = "yes" ]; then
+			STATUSLINE_FOUND+=("$path")
+			[ "$FLAG_NO_STATUSLINE" -eq 1 ] && SKIP+=("$path")
+		fi
+	else
+		CONFIG_FOUND+=("$label: (chưa có file $path)")
 	fi
 done
+
+# Nếu người dùng trỏ config ra ngoài config dir thì backup không tự thấy được.
+if [ -n "${PI_PROVIDER_FALLBACK_CONFIG:-}" ]; then
+	warn "PI_PROVIDER_FALLBACK_CONFIG=$PI_PROVIDER_FALLBACK_CONFIG — file này nằm NGOÀI backup, copy thủ công nếu cần"
+fi
+
+WANT=("${ITEMS_SETUP[@]}")
+[ "$FLAG_AUTH" -eq 1 ] && WANT+=(auth.json)
+[ "$FLAG_SKILLS" -eq 1 ] && WANT+=(skills)
+[ "$FLAG_MEMORY" -eq 1 ] && WANT+=(memory)
+[ "$FLAG_MISSIONS" -eq 1 ] && WANT+=(missions)
+[ "$FLAG_SESSIONS" -eq 1 ] && WANT+=(sessions)
+
+# Hooks: pi không có thư mục hooks riêng — hook nằm trong các thư mục tên 'hooks'
+# bên trong config dir (hiện tại: extensions/agentkit-hooks-engineer/hooks).
+# Chỉ quét trong $AGENT_DIR, KHÔNG đụng ~/.claude/hooks (ở đó có .env).
+if [ "$FLAG_HOOKS" -eq 1 ]; then
+	HOOK_PATHS=()
+	while IFS= read -r h; do
+		[ -n "$h" ] || continue
+		HOOK_PATHS+=("${h#"$AGENT_DIR"/}")
+	done < <(find "$AGENT_DIR" -type d -name hooks 2>/dev/null | sort)
+	if [ "${#HOOK_PATHS[@]}" -eq 0 ]; then
+		warn "--hooks: không tìm thấy thư mục 'hooks' nào trong $AGENT_DIR"
+	else
+		PROTECT+=("${HOOK_PATHS[@]}")
+	fi
+fi
+
+INCLUDE=()
+for item in "${WANT[@]}"; do
+	if [ -e "$AGENT_DIR/$item" ]; then
+		INCLUDE+=("$item")
+	else
+		case "$item" in
+			skills | memory | missions | sessions | auth.json) warn "$item: không tồn tại, bỏ qua" ;;
+		esac
+	fi
+done
+
+# Hook chỉ được thêm như mục riêng khi nó KHÔNG nằm trong mục nào đã lấy
+# (VD hooks ở gốc config dir). Nếu đã nằm trong extensions/ thì không thêm nữa
+# để tránh archive trùng; lúc đó --hooks chỉ còn tác dụng bảo vệ khỏi .pi-setup-exclude.
+if [ "$FLAG_HOOKS" -eq 1 ] && [ "${#HOOK_PATHS[@]}" -gt 0 ]; then
+	for h in "${HOOK_PATHS[@]}"; do
+		covered=0
+		for item in "${INCLUDE[@]}"; do
+			case "$h" in
+				"$item" | "$item"/*) covered=1; break ;;
+			esac
+		done
+		if [ "$covered" -eq 0 ]; then
+			INCLUDE+=("$h")
+		fi
+	done
+fi
+
 [ "${#INCLUDE[@]}" -gt 0 ] || die "không có gì để backup trong $AGENT_DIR"
 [ -f "$AGENT_DIR/settings.json" ] || warn "không thấy settings.json — artifact sẽ không có danh sách extension!"
 
-# --- Cảnh báo symlink trỏ RA NGOÀI config dir (VD skills -> ~/.agents/skills của AgentKit).
-# Trong artifact symlink giữ nguyên dạng tương đối, nên máy mới phải có sẵn đích đó.
-EXT_LINKS=""
-for item in "${INCLUDE[@]}"; do
-	while IFS= read -r link; do
-		[ -n "$link" ] || continue
-		real="$(cd "$(dirname "$link")" && realpath "$(readlink "$link")" 2>/dev/null || true)"
-		case "$real" in
-			"$AGENT_DIR"/*) : ;;
-			*) EXT_LINKS="$EXT_LINKS  ${link#"$AGENT_DIR"/} -> $(readlink "$link")
-" ;;
-		esac
-	done < <(find "$AGENT_DIR/$item" -type l 2>/dev/null)
-done
-if [ -n "$EXT_LINKS" ]; then
-	warn "có symlink trỏ ra ngoài config dir — máy mới phải có sẵn đích:"
-	printf '%s' "$EXT_LINKS" >&2
+# --- Cảnh báo về những gì được lấy thêm ---
+[ "$FLAG_AUTH" -eq 1 ] && warn "--auth: artifact sẽ CHỨA CREDENTIAL (auth.json). KHÔNG đưa lên nơi công khai."
+[ "$FLAG_MISSIONS" -eq 1 ] && warn "--missions: artifact sẽ chứa state mission (có thể có tên project/khách hàng)."
+[ "$FLAG_SESSIONS" -eq 1 ] && warn "--sessions: artifact sẽ chứa lịch sử chat."
+if [ "$FLAG_NO_STATUSLINE" -eq 1 ] && [ "${#STATUSLINE_FOUND[@]}" -gt 0 ]; then
+	warn "--no-statusline: loại ${STATUSLINE_FOUND[*]} — máy mới sẽ dùng layout statusline mặc định"
 fi
+
+# --- Symlink: dereference khi lấy skills, để backup tự chứa ---
+DEREF=0
+[ "$FLAG_SKILLS" -eq 1 ] && DEREF=1
+
+EXT_LINKS=""
+if [ "$DEREF" -eq 0 ]; then
+	# Cảnh báo symlink trỏ RA NGOÀI config dir (VD skills -> ~/.agents/skills của AgentKit).
+	for item in "${INCLUDE[@]}"; do
+		while IFS= read -r link; do
+			[ -n "$link" ] || continue
+			real="$(cd "$(dirname "$link")" && realpath "$(readlink "$link")" 2>/dev/null || true)"
+			case "$real" in
+				"$AGENT_DIR"/*) : ;;
+				*) EXT_LINKS="$EXT_LINKS  ${link#"$AGENT_DIR"/} -> $(readlink "$link")
+" ;;
+			esac
+		done < <(find "$AGENT_DIR/$item" -type l 2>/dev/null)
+	done
+	if [ -n "$EXT_LINKS" ]; then
+		warn "có symlink trỏ ra ngoài config dir — máy mới phải có sẵn đích:"
+		printf '%s' "$EXT_LINKS" >&2
+		warn "(dùng --skills để dereference thành nội dung thật)"
+	fi
+else
+	info "→ --skills: dereference symlink (backup tự chứa)"
+fi
+
+# Giá trị trông như placeholder trong tài liệu, không phải secret thật.
+# Dùng để giảm cảnh báo giả (skill doc hay có `password: "securePassword123"`,
+# `"client_secret": "{CLIENT_SECRET}"`) — nhờ vậy cảnh báo còn lại mới đáng đọc.
+PLACEHOLDER_RE='\{|\}|<|>|your|example|placeholder|changeme|dummy|redacted|xxx|secure|sample|foobar|_test|test_|dummy'
+
+# Heuristic phụ: giá trị chỉ gồm CHỮ CÁI (VD `currentPassword`, `userPassword`)
+# là ví dụ trong tài liệu, không phải secret thật. Secret thật gần như luôn có
+# số/ký tự đặc biệt (base64, hex, `sk-…`) nên lọc theo "thuần chữ" là an toàn.
+is_placeholder() { # $1 = chuỗi khớp regex
+	local s="$1" val uniq
+	val="$(printf '%s' "$s" | grep -oE '"[^"]*"$' | tr -d '"')"
+	[ -n "$val" ] || val="$s"
+	# Entropy thấp: ≤ 8 ký tự khác nhau (VD fixture `ghp_aaaa…`, `test-test-test`).
+	uniq="$(printf '%s' "$val" | fold -w1 | sort -u | wc -l | tr -d ' ')"
+	[ "$uniq" -le 8 ] && return 0
+	# Giá trị thuần chữ cái (camelCase như `currentPassword`) → ví dụ tài liệu.
+	case "$val" in
+		*[0-9]* | *[+/=_%$@!.:~-]*) return 1 ;;
+	esac
+	printf '%s' "$val" | grep -qE '^[A-Za-z]{4,40}$'
+}
+
+# PEM header trần (VD trong tài liệu dạy cách nhận biết secret) KHÔNG phải key thật:
+# chỉ tính khi có thân base64 thật theo sau.
+has_pem_block() { # $1 = file
+	awk '/-----BEGIN [A-Z ]*PRIVATE KEY-----/ { getline; if ($0 ~ /^[A-Za-z0-9+\/]{20,}={0,2}$/) { found=1; exit } } END { exit found ? 0 : 1 }' "$1"
+}
 
 # --- Quét secret trên nội dung sẽ đóng gói ---
 scan_secrets() { # $1 = thư mục chứa nội dung
-	if grep -rEIl "$SECRET_RE" "$1" >/dev/null 2>&1; then
-		warn "phát hiện chuỗi giống secret:"
-		grep -rEIl "$SECRET_RE" "$1" >&2 || true
-		warn "KIỂM TRA LẠI trước khi đưa artifact lên nơi không tin cậy."
+	local found=0 skipped=0 f hits kept h
+	while IFS= read -r f; do
+		case "$f" in */auth.json) continue ;; esac # có chủ ý khi dùng --auth
+		hits="$(grep -oE "$SECRET_RE" "$f" 2>/dev/null | grep -vEi "$PLACEHOLDER_RE" || true)"
+		if [ -n "$hits" ] && ! has_pem_block "$f"; then
+			hits="$(printf '%s\n' "$hits" | grep -v -- '-----BEGIN' || true)"
+		fi
+		kept=""
+		while IFS= read -r h; do
+			[ -n "$h" ] || continue
+			is_placeholder "$h" || kept="$kept$h"$'\n'
+		done <<<"$hits"
+		if [ -z "$kept" ]; then
+			skipped=$((skipped + 1))
+			continue
+		fi
+		found=$((found + 1))
+		warn "chuỗi giống secret trong: ${f#"$1"/}"
+		printf '     %s\n' "$(printf '%s' "$kept" | head -2 | cut -c1-100)" >&2
+	done < <(grep -rEIl "$SECRET_RE" "$1" 2>/dev/null)
+	if [ "$found" -gt 0 ]; then
+		warn "$found file có chuỗi giống secret — KIỂM TRA trước khi đưa artifact lên nơi không tin cậy."
 		return 1
 	fi
-	info "→ quét secret: sạch"
+	if [ "$skipped" -gt 0 ]; then
+		info "→ quét secret: sạch ($skipped file chỉ khớp placeholder trong tài liệu)"
+	else
+		info "→ quét secret: sạch"
+	fi
 	return 0
 }
 
@@ -127,6 +306,11 @@ pkg_count() {
 	else
 		echo '?'
 	fi
+}
+
+item_size() {
+	if SIZE="$(du -sh "$AGENT_DIR/$1" 2>/dev/null | cut -f1)"; then :; else SIZE="?"; fi
+	emit "    $(printf '%-46s' "$1") $SIZE"
 }
 
 # Danh sách loại trừ cho chế độ --config-dir: đọc <CONFIG_DIR>/.pi-setup-exclude
@@ -144,6 +328,23 @@ load_excludes() {
 	done <"$f"
 }
 
+# Ở chế độ --config-dir, .pi-setup-exclude thường xoá extensions/agentkit-* — nhưng
+# nếu người dùng yêu cầu rõ bằng --hooks thì tôn trọng yêu cầu đó (không xoá).
+# Ở chế độ --config-dir, .pi-setup-exclude thường xoá extensions/agentkit-* — nhưng
+# nếu người dùng yêu cầu rõ bằng --hooks thì tôn trọng yêu cầu đó (không xoá).
+# (PROTECT được khai báo + fill ở phía trên, cạnh phần parse --hooks.)
+
+protected_path() { # $1 = đường dẫn tương đối trong CONFIG_DIR
+	local p
+	for p in "${PROTECT[@]:-}"; do
+		[ -n "$p" ] || continue
+		case "$1" in
+			"$p" | "$p"/*) return 0 ;;
+		esac
+	done
+	return 1
+}
+
 # Xoá những file khớp EXCLUDES trong $CONFIG_DIR. Trả về số file đã loại.
 prune_excluded() {
 	[ "${#EXCLUDES[@]}" -gt 0 ] || {
@@ -157,6 +358,7 @@ prune_excluded() {
 			# shellcheck disable=SC2254
 			case "$rel" in
 				$pat)
+					protected_path "$rel" && break
 					rm -f "$f"
 					removed=$((removed + 1))
 					break
@@ -164,6 +366,13 @@ prune_excluded() {
 			esac
 		done
 	done < <(find "$CONFIG_DIR" -type f -print0 2>/dev/null)
+
+	# Dọn thư mục rỗng còn sót sau khi xoá file (nếu không, mirror sẽ có cây thư mục rỗng).
+	EMPTY_DIRS="$(find "$CONFIG_DIR" -type d -empty 2>/dev/null | wc -l | tr -d ' ')"
+	if [ "$EMPTY_DIRS" -gt 0 ]; then
+		find "$CONFIG_DIR" -type d -empty -delete 2>/dev/null || true
+	fi
+
 	printf '%s\n' "$removed"
 }
 
@@ -178,25 +387,48 @@ if [ -n "$CONFIG_DIR" ]; then
 	STAGE="$(mktemp -d)"
 	trap 'rm -rf "$STAGE"' EXIT
 	for item in "${INCLUDE[@]}"; do
-		cp -R "$AGENT_DIR/$item" "$STAGE/$item"
+		mkdir -p "$STAGE/$(dirname "$item")"
+		if [ -d "$AGENT_DIR/$item" ]; then
+			cp -RL "$AGENT_DIR/$item" "$STAGE/$item" # -L: dereference symlink (dùng với --skills)
+		else
+			cp "$AGENT_DIR/$item" "$STAGE/$item"
+		fi
 	done
 	scan_secrets "$STAGE" || true
 
 	if [ "$DRY_RUN" -eq 1 ]; then
 		info ""
 		info "[dry-run] sẽ mirror vào: $CONFIG_DIR"
-		for item in "${INCLUDE[@]}"; do info "  $item"; done
+		for item in "${INCLUDE[@]}"; do
+			info "  $item ($(du -sh "$AGENT_DIR/$item" 2>/dev/null | cut -f1))"
+		done
 		exit 0
 	fi
 
 	mkdir -p "$CONFIG_DIR"
 	for item in "${INCLUDE[@]}"; do
 		rm -rf "${CONFIG_DIR:?}/$item" # mirror: xoá bản cũ của CHÍNH mục này rồi copy lại
-		cp -R "$AGENT_DIR/$item" "$CONFIG_DIR/$item"
+		mkdir -p "$CONFIG_DIR/$(dirname "$item")"
+		if [ -d "$AGENT_DIR/$item" ]; then
+			cp -RL "$AGENT_DIR/$item" "$CONFIG_DIR/$item"
+		else
+			cp "$AGENT_DIR/$item" "$CONFIG_DIR/$item"
+		fi
 	done
 
 	load_excludes
 	EXCLUDED="$(prune_excluded)"
+
+	# --no-statusline: xoá file statusline sau khi mirror.
+	for p in "${SKIP[@]:-}"; do
+		[ -n "$p" ] || continue
+		[ -e "$CONFIG_DIR/$p" ] && rm -f "$CONFIG_DIR/$p"
+	done
+
+	# Báo rõ nếu .pi-setup-exclude bị ghi đè bởi một flag opt-in (VD --hooks).
+	if [ "${#PROTECT[@]}" -gt 0 ] && [ "${#EXCLUDES[@]}" -gt 0 ]; then
+		warn ".pi-setup-exclude bị ghi đè cho: ${PROTECT[*]}"
+	fi
 
 	# Cảnh báo file lạ còn sót ở cấp cao nhất (không tự xoá). Bỏ qua dotfile.
 	STALE=()
@@ -216,14 +448,19 @@ if [ -n "$CONFIG_DIR" ]; then
 
 	info ""
 	info "✓ đã ghi config: $CONFIG_DIR"
-	info "  mục:      ${INCLUDE[*]}"
+	info "  mục:"
+	for item in "${INCLUDE[@]}"; do item_size "$item"; done
 	if [ "${#EXCLUDES[@]}" -gt 0 ]; then
 		info "  loại trừ: $EXCLUDED file khớp .pi-setup-exclude (${EXCLUDES[*]})"
 	fi
 	info "  packages: $(pkg_count)"
-	if [ "$WITH_STATE" -eq 0 ]; then
-		info "  (không gồm state: skills/ memory/ missions/ — thêm --with-state nếu cần)"
+	if [ "$FLAG_NO_STATUSLINE" -eq 1 ]; then
+		info "  statusline: BỬ QUA (--no-statusline)${STATUSLINE_FOUND:+ — đã bỏ ${STATUSLINE_FOUND[*]}}"
 	fi
+	info "  config extension:"
+	for c in "${CONFIG_FOUND[@]}"; do
+		info "    $c"
+	done
 	exit 0
 fi
 
@@ -233,19 +470,37 @@ fi
 mkdir -p "$(dirname "$OUT")"
 TMP="$OUT.tmp.$$"
 SCAN_DIR="$(mktemp -d)"
-cleanup() { rm -f "$TMP"; rm -rf "$SCAN_DIR"; }
+cleanup() {
+	trap - ERR
+	rm -f "$TMP"
+	rm -rf "$SCAN_DIR"
+	return 0
+}
 trap cleanup EXIT
 
 # Ghi ra file tạm rồi mv → không để lại artifact hỏng nếu bị ngắt giữa chừng.
 # 'gzip -n' bỏ timestamp → cùng nội dung thì cùng sha256 (kiểm tra được giữa 2 máy).
-tar -cf - -C "$AGENT_DIR" "${INCLUDE[@]}" | gzip -n >"$TMP"
+TAR_OPTS=(-cf -)
+[ "$DEREF" -eq 1 ] && TAR_OPTS=(-hcf -) # -h: dereference symlink (dùng với --skills)
+EXCLUDE_OPTS=()
+for p in "${SKIP[@]:-}"; do
+	[ -n "$p" ] || continue
+	EXCLUDE_OPTS+=("--exclude=$p")
+done
+
+# Lưu ý: không dùng "${EXCLUDE_OPTS[@]:-}" — array rỗng sẽ thành 1 phần tử '' và tar báo lỗi.
+if [ "${#EXCLUDE_OPTS[@]}" -gt 0 ]; then
+	tar "${TAR_OPTS[@]}" "${EXCLUDE_OPTS[@]}" -C "$AGENT_DIR" "${INCLUDE[@]}" | gzip -n >"$TMP"
+else
+	tar "${TAR_OPTS[@]}" -C "$AGENT_DIR" "${INCLUDE[@]}" | gzip -n >"$TMP"
+fi
 tar -xzf "$TMP" -C "$SCAN_DIR"
 scan_secrets "$SCAN_DIR" || true
 
 if [ "$DRY_RUN" -eq 1 ]; then
 	info ""
 	info "[dry-run] sẽ ghi bundle: $OUT"
-	for item in "${INCLUDE[@]}"; do info "  $item"; done
+	for item in "${INCLUDE[@]}"; do item_size "$item"; done
 	exit 0
 fi
 
@@ -254,7 +509,7 @@ mv "$TMP" "$OUT"
 # --- Tóm tắt ---
 FILE_COUNT="$(tar -tzf "$OUT" | grep -vc '/$' || true)"
 if SIZE_BYTES="$(stat -f%z "$OUT" 2>/dev/null)"; then :; else SIZE_BYTES="$(stat -c%s "$OUT" 2>/dev/null || echo 0)"; fi
-SIZE="$(awk -v b="$SIZE_BYTES" 'BEGIN { printf "%.1f KB", b / 1024 }')"
+SIZE="$(awk -v b="$SIZE_BYTES" 'BEGIN { if (b >= 1048576) printf "%.1f MB", b / 1048576; else printf "%.1f KB", b / 1024 }')"
 if command -v shasum >/dev/null 2>&1; then
 	SHA="$(shasum -a 256 "$OUT" | cut -d' ' -f1)"
 else
@@ -267,12 +522,21 @@ else
 	emit ""
 	emit "✓ bundle:  $OUT"
 	emit "  size:    $SIZE ($SIZE_BYTES byte, $FILE_COUNT file)"
-	emit "  gồm:     ${INCLUDE[*]}"
+	emit "  mục:"
+	for item in "${INCLUDE[@]}"; do item_size "$item"; done
 	emit "  packages: $(pkg_count) (từ settings.json)"
-	emit "  sha256:  $SHA"
-	if [ "$WITH_STATE" -eq 1 ]; then
-		emit "  ⚠ bundle CÓ state (memory/ missions/) — không nên đưa lên nơi công khai"
-	else
-		emit "  (không gồm state: skills/ memory/ missions/)"
+	if [ "$FLAG_NO_STATUSLINE" -eq 1 ]; then
+		emit "  statusline: BỬ QUA (--no-statusline)${STATUSLINE_FOUND:+ — đã bỏ ${STATUSLINE_FOUND[*]}}"
 	fi
+	emit "  config extension:"
+	for c in "${CONFIG_FOUND[@]}"; do
+		emit "    $c"
+	done
+	emit "  sha256:  $SHA"
+if [ "$FLAG_AUTH" -eq 1 ]; then
+	emit "  ⚠ bundle chứa auth.json (credential) — KHÔNG đưa lên nơi công khai"
+fi
+if [ "$FLAG_MISSIONS" -eq 1 ] || [ "$FLAG_SESSIONS" -eq 1 ]; then
+	emit "  ⚠ bundle chứa dữ liệu nhạy cảm (missions/sessions) — KHÔNG đưa lên nơi công khai"
+fi
 fi

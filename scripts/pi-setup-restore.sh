@@ -28,7 +28,8 @@ DRY_RUN=0
 SCRATCH=0
 
 # Nội dung được phép restore. Có gì trong nguồn thì copy cái đó.
-ITEMS=(settings.json APPEND_SYSTEM.md models-store.json extensions skills memory missions)
+# 'hooks' không cần liệt kê riêng: chúng nằm trong cây extensions/.
+ITEMS=(settings.json APPEND_SYSTEM.md models-store.json extensions skills memory missions sessions auth.json)
 
 info() { printf '%s\n' "$*"; }
 warn() { printf '⚠  %s\n' "$*" >&2; }
@@ -125,10 +126,17 @@ fi
 [ -f "$SRC/settings.json" ] || warn "nguồn không có settings.json — sẽ KHÔNG có extension nào được cài!"
 
 # --- Snapshot config cũ trước khi ghi đè ---
-if [ "$DRY_RUN" -eq 0 ] && [ -f "$TARGET/settings.json" ]; then
+if [ "$DRY_RUN" -eq 0 ]; then
 	STAMP="$(date +%Y%m%d-%H%M%S)"
-	cp "$TARGET/settings.json" "$TARGET/settings.json.bak.$STAMP"
-	warn "đã snapshot settings.json cũ → settings.json.bak.$STAMP"
+	if [ -f "$TARGET/settings.json" ]; then
+		cp "$TARGET/settings.json" "$TARGET/settings.json.bak.$STAMP"
+		warn "đã snapshot settings.json cũ → settings.json.bak.$STAMP"
+	fi
+	# auth.json là credential: ghi đè mà không sao lưu là không thể khôi phục.
+	if [ -f "$TARGET/auth.json" ] && [ -f "$SRC/auth.json" ]; then
+		cp "$TARGET/auth.json" "$TARGET/auth.json.bak.$STAMP"
+		warn "đã snapshot auth.json cũ → auth.json.bak.$STAMP"
+	fi
 fi
 
 # --- Copy ---
@@ -172,6 +180,9 @@ fi
 info ""
 info "✓ đã restore: ${RESTORED[*]:-không có gì}"
 info "  đích:     $TARGET"
+if [ -f "$TARGET/auth.json" ] && [ -f "$SRC/auth.json" ]; then
+	warn "auth.json đã bị ghi đè từ nguồn — chạy 'pi auth check' để xác nhận credential còn dùng được"
+fi
 info "  packages: $PKG_COUNT (sẽ được pi tự cài ở lần chạy đầu)"
 
 # --- Tự cài extension (chạy pi 1 lần, headless) ---
