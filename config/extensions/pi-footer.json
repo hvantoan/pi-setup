@@ -124,6 +124,12 @@
       {
         "type": "external-status",
         "options": {
+          "externalStatusKey": "session-recap"
+        }
+      },
+      {
+        "type": "external-status",
+        "options": {
           "externalStatusKey": "usage"
         }
       },
@@ -151,6 +157,7 @@
       "goal",
       "mcp",
       "mcp-auth",
+      "session-recap",
       "stash",
       "subagent-slash",
       "subagent-slash-text",
@@ -164,6 +171,7 @@
       "goal",
       "mcp",
       "mcp-auth",
+      "session-recap",
       "stash",
       "subagent-slash",
       "subagent-slash-text",

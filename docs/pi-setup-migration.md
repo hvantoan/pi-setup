@@ -16,7 +16,7 @@ cd zuey-pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
 ```
 
-Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 18 extensions.
+Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 19 extensions.
 
 **Không cần** copy thư mục `npm/` (244 MB cache) hay `auth.json` (secret).
 
@@ -40,7 +40,7 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 
 | Mục trong `~/.pi/agent/` | Size | Vào repo? | Lý do |
 |---|---|---|---|
-| `settings.json` | 4 KB | ✅ **bắt buộc** | 18 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
+| `settings.json` | 4 KB | ✅ **bắt buộc** | 19 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
 | `extensions/` | 1.3 MB | ✅ (lọc) | extension tự viết local + config của chúng. `orca-*.ts` (Orca sinh) và `agentkit-*` (AgentKit sinh) bị loại — xem `.pi-setup-exclude` |
 | `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
@@ -117,7 +117,7 @@ Script sẽ:
 
 1. Snapshot `settings.json` hiện có thành `settings.json.bak.<YYYYmmdd-HHMMSS>` (nếu đã tồn tại),
 2. Copy 4 mục setup vào `~/.pi/agent`,
-3. Chạy pi headless 1 lần → pi tự cài 18 extension (~150–200 s),
+3. Chạy pi headless 1 lần → pi tự cài 19 extension (~150–220 s),
 4. Verify số extension khớp với `settings.json`.
 
 ## Bước 3 — login lại provider
@@ -254,7 +254,17 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | `auth.json` trong dir mới | `{}` → **không rò secret** |
 | Chạy lần 2 | log rỗng (0 byte) → **idempotent** |
 
-### Đường `--from-config config` (payload hiện tại — 18 package)
+### Đường `--from-config config` (payload hiện tại — 19 package)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Restore vào dir mới | ✅ `settings.json APPEND_SYSTEM.md models-store.json advisor.json extensions` |
+| Cài 19 extension | ✅ **209 s**, module dirs `0 → 185` |
+| `--verify` | ✅ **`19/19 extension khớp`** |
+| `pi list` trong bản restore | ✅ 19 package |
+| `advisor.json` được restore | ✅ có |
+
+### Snapshot 18 package
 
 | Kiểm tra | Kết quả |
 |---|---|
@@ -339,7 +349,7 @@ skills/orchestration          -> ../../../.agents/skills/orchestration
 skills/orca-per-workspace-env -> ../../../.agents/skills/orca-per-workspace-env
 ```
 
-Đây là skill của **AgentKit** (`ak` CLI), không phải pi. Chúng chỉ hoạt động nếu máy mới đã cài AgentKit. Nếu chưa, 2 symlink này gãy — **không ảnh hưởng extension nào khác** (đã test đúng tình huống gãy: pi vẫn khởi động 0 lỗi, đủ 16 extension). Chúng cũng **không** nằm trong repo (state, không phải setup).
+Đây là skill của **AgentKit** (`ak` CLI), không phải pi. Chúng chỉ hoạt động nếu máy mới đã cài AgentKit. Nếu chưa, 2 symlink này gãy — **không ảnh hưởng extension nào khác** (đã test đúng tình huống gãy: pi vẫn khởi động 0 lỗi, đủ extension). Chúng cũng **không** nằm trong repo (state, không phải setup).
 
 **3 extension `orca-*.ts` KHÔNG nằm trong repo.** `orca-agent-status.ts`, `orca-prefill.ts`, `orca-titlebar-spinner.ts` mang marker `@orca-managed-pi-extension` — do Orca sinh ra để tích hợp pi với Orca (gọi hook `127.0.0.1`, token đọc từ env `ORCA_AGENT_HOOK_TOKEN`, không hardcode secret). Chúng bị loại khỏi repo public vì là glue code tích hợp; Orca tự sinh lại khi quản lý pi trên máy mới.
 
@@ -350,6 +360,10 @@ skills/orca-per-workspace-env -> ../../../.agents/skills/orca-per-workspace-env
 Config toàn cục ở `~/.pi/agent/advisor.json` — ở **gốc** config dir, không trong `extensions/`, nên `ITEMS_SETUP` của backup script phải liệt kê riêng (project override bằng `<project>/.pi/advisor.json`).
 
 Extension này công bố thêm 2 status key `advisor-scout` + `advisor-usage`; cả hai đã vào `hiddenKeys` và có widget `external-status` inline → statusline vẫn **3 hàng** kể cả khi Advisor đang chạy (đã test với cả 11 key cùng có giá trị).
+
+**`@tmustier/pi-session-recap` không có config/state.** Không đọc-ghi file nào trong `~/.pi/agent/` nên không cần thêm mục nào vào backup. Nó công bố 1 status key `session-recap` (chỉ khi đang soạn recap) — đã nằm trong `hiddenKeys` + có widget inline, nên statusline giữ 3 hàng.
+
+> tmux: cần `set -g focus-events on` trong `~/.tmux.conf` rồi `tmux source-file ~/.tmux.conf` thì extension mới biết bạn đã quay lại.
 
 ### `.pi-setup-exclude`
 

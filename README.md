@@ -2,7 +2,7 @@
 
 # zuey-pi-setup
 
-**Portable snapshot của setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 18 extensions trên máy mới.**
+**Portable snapshot của setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 19 extensions trên máy mới.**
 
 pi `0.85.1` · Node `24` · macOS/Linux · cập nhật 2026-09-15
 
@@ -85,7 +85,8 @@ zuey-pi-setup/
 │   └── pi-setup-portable.tar.gz     bundle sẵn để tải (đã lọc — xem bên dưới)
 └── config/                          snapshot setup (plain file, diff được bằng git)
     ├── .pi-setup-exclude           glob loại trừ — backup tôn trọng file này
-    ├── settings.json               manifest 18 packages + model/theme/compaction
+    ├── settings.json               manifest 19 packages + model/theme/compaction
+    ├── advisor.json                config pi-advisor-flow (ở gốc config dir)
     ├── APPEND_SYSTEM.md            system prompt phụ
     ├── models-store.json           catalog model (khỏi chờ refresh 4h)
     └── extensions/                 extension tự viết, không có trên npm
@@ -121,7 +122,7 @@ Từ bản hiện tại, cùng file đó cũng dùng được cho **chế độ 
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **6 file** — `settings.json` (18 package), `APPEND_SYSTEM.md`, `models-store.json`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `extensions/provider-fallback.json`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **7 file** — `settings.json` (19 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `extensions/provider-fallback.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -130,11 +131,11 @@ Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **6 file** — `
 | `extensions/orca-*.ts` (3 file, 1 239 dòng) | code do Orca sinh — bạn đã chọn không đưa lên public |
 | `extensions/agentkit-*` (95 file) | chứa `native-skill-paths.json` + `native-skill-hashes.json` (**path tuyệt đối**, danh sách 107 skill) và `hooks/.logs/hook-log.jsonl` (log hoạt động) |
 
-Restore bundle này cho kết quả **giống hệt** `config/` (18 extension + statusline). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
+Restore bundle này cho kết quả **giống hệt** `config/` (19 extension + statusline). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
 
 ---
 
-## 18 extensions trong snapshot
+## 19 extensions trong snapshot
 
 | # | Package | Version | Làm gì |
 |---|---|---|---|
@@ -156,6 +157,7 @@ Restore bundle này cho kết quả **giống hệt** `config/` (18 extension + 
 | 16 | `pi-chime` | 1.2.1 | chuông terminal khi agent trả lời xong |
 | 17 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` giả TLS desktop browser + trích nội dung bằng defuddle |
 | 18 | `pi-advisor-flow` | 0.6.0 | flow Executor/Advisor: ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc |
+| 19 | `@tmustier/pi-session-recap` | 0.5.0 | recap “while you were away”: soạn sẵn bản tóm tắt khi bạn rời session, hiện ở cuối transcript / trên editor lúc quay lại. Cho workflow nhiều agent chạy song song |
 
 > Version là **tham khảo tại thời điểm snapshot**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
@@ -209,7 +211,7 @@ Statusline được xếp **đúng 3 hàng**, không bỏ widget nào:
 
 **Vì sao trước đây là 4 hàng:** pi-footer render số hàng trong `lines` **cộng thêm 1 hàng** (`extensionStatusRow`) chứa status do các extension khác công bố qua `ctx.ui.setStatus` (`mcp`, `goal`, `background-tasks`, `usage`). Ẩn hàng đó bằng `extensionStatusRow.hiddenKeys` và đưa chúng vào hàng 3 dưới dạng widget `external-status`.
 
-> ⚠️ `hiddenKeys` là danh sách key **chính xác**, không có wildcard. Nếu sau này một extension khác công bố status mới, hàng thứ 4 sẽ quay lại — thêm key đó vào `hiddenKeys` (hoặc dùng `/footer`). Các key đang được phủ (11): `advisor-scout`, `advisor-usage`, `background-tasks`, `goal`, `mcp`, `mcp-auth`, `stash`, `subagent-slash`, `subagent-slash-text`, `usage`, `worktree`.
+> ⚠️ `hiddenKeys` là danh sách key **chính xác**, không có wildcard. Nếu sau này một extension khác công bố status mới, hàng thứ 4 sẽ quay lại — thêm key đó vào `hiddenKeys` (hoặc dùng `/footer`). Các key đang được phủ (12): `advisor-scout`, `advisor-usage`, `background-tasks`, `goal`, `mcp`, `mcp-auth`, `session-recap`, `stash`, `subagent-slash`, `subagent-slash-text`, `usage`, `worktree`.
 
 **Giới hạn độ rộng:** tổng nội dung là **243 ký tự** (201 của widget + 42 của separator) → 3 hàng thì hàng dài nhất **buộc phải ≥ 81**. Layout hiện tại cần terminal **≥ 85 cột**, hẹp hơn sẽ bị cắt đuôi bằng `…`. Muốn vừa terminal 80 cột, giảm độ rộng: `cwd` → `segments: 2` (−8) và `model-provider` → `model` (−11) ⇒ hàng dài nhất còn ~65.
 
@@ -249,6 +251,18 @@ Config toàn cục ở **`~/.pi/agent/advisor.json`** — nằm ở **gốc** co
 Extension này còn công bố 2 status key (`advisor-scout`, `advisor-usage`) — đã được đưa vào `hiddenKeys` + widget inline như 9 key kia, để hàng status không quay lại khi Advisor đang chạy.
 
 State riêng của nó (`advisor-outcomes.jsonl`, `advisor-outcomes-salt`) là log/salt theo máy → đã cho vào `.pi-setup-exclude`, không lên repo.
+
+---
+
+## `@tmustier/pi-session-recap`
+
+Recap **“while you were away”** (theo mẫu away-summary của Claude Code): khi bạn thật sự rời session một lúc, extension soạn sẵn một bản tóm tắt ngắn — việc lớn đang làm trước, rồi bước tiếp theo cụ thể — và đặt ở cuối transcript (TUI thường thì nằm trên editor) để bạn đọc ngay khi quay lại. Làm cho workflow nhiều agent chạy song song ở nhiều tab.
+
+**Không có file config hay state nào** — extension thuần stateless, không đọc/ghi gì trong `~/.pi/agent/`, nên không cần thêm gì vào danh sách backup.
+
+Nó vẫn công bố 1 status key (`session-recap`, hiện `✦ drafting recap…` lúc đang soạn) → đã vào `hiddenKeys` + có widget inline, để statusline không nhảy lên hàng 4 trong lúc recap đang soạn.
+
+> Nếu dùng tmux, cần `set -g focus-events on` trong `~/.tmux.conf` rồi `tmux source-file ~/.tmux.conf` để extension biết bạn đã quay lại.
 
 ---
 
@@ -309,10 +323,10 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 
 | Kiểm tra | Kết quả |
 |---|---|
-| Thời gian cài lần đầu | **136 s · 138 s · 153 s · 192 s · 210 s** qua các lần chạy (tuỳ tốc độ npm) |
-| Module dirs trong `npm/node_modules` | **0 → 184** (snapshot 18 package) |
-| `--verify` | **18/18** ở lần chạy gần nhất (18 package), **17/17** và **16/16** ở các snapshot trước |
-| Extension **thực sự chạy** (không chỉ cài) | ✅ 16 `extension_ui_request`, 0 lỗi, đủ surface `subagent-async`, `mcp`, `goal`, `background-tasks`, `usage`, `pi-footer`, `advisor-scout`, `advisor-usage` |
+| Thời gian cài lần đầu | **136–210 s** qua 6 lần chạy (tuỳ tốc độ npm) |
+| Module dirs trong `npm/node_modules` | **0 → 185** (snapshot 19 package) |
+| `--verify` | **19/19** ở lần chạy gần nhất, và **18/18 · 17/17 · 16/16** ở các snapshot trước |
+| Extension **thực sự chạy** (không chỉ cài) | ✅ 17 `extension_ui_request`, 0 lỗi, đủ surface `subagent-async`, `mcp`, `goal`, `background-tasks`, `usage`, `pi-footer`, `advisor-scout`, `advisor-usage` |
 | Clone repo public rồi restore | ✅ 11 file, 0 file bị loại, 153 s, verify khớp, 0 lỗi |
 | `auth.json` trong dir mới | `{}` → không rò secret |
 | Chạy lần 2 | log rỗng → idempotent |
