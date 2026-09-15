@@ -155,6 +155,22 @@ Model khác thì thang chia khác — context 1M ở 25% ra `[████░░
 
 Dòng 2 của statusline hiện tại: `context-bar` → `cache-hit-rate` → 2 event widget (`cache_ttl`, `tps` do `pi-footer-cache-tps.ts` đẩy vào).
 
+### Layout 3 hàng
+
+Statusline được xếp **đúng 3 hàng**, không bỏ widget nào:
+
+| Hàng | Nội dung | Width |
+|---|---|---|
+| 1 | `cwd` · `model-provider` · `thinking-level` | 71 |
+| 2 | `context-bar` · `cache-hit-rate` · `cache_ttl` · `tps` · `total-time` | 80 |
+| 3 | `git-branch` · `git-diff` · `cost` · `mcp` · `background-tasks` · `goal` · `usage` | 84 |
+
+**Vì sao trước đây là 4 hàng:** pi-footer render số hàng trong `lines` **cộng thêm 1 hàng** (`extensionStatusRow`) chứa status do các extension khác công bố qua `ctx.ui.setStatus` (`mcp`, `goal`, `background-tasks`, `usage`). Ẩn hàng đó bằng `extensionStatusRow.hiddenKeys` và đưa chúng vào hàng 3 dưới dạng widget `external-status`.
+
+> ⚠️ `hiddenKeys` là danh sách key **chính xác**, không có wildcard. Nếu sau này một extension khác công bố status mới, hàng thứ 4 sẽ quay lại — thêm key đó vào `hiddenKeys` (hoặc dùng `/footer`).
+
+**Giới hạn độ rộng:** tổng nội dung là **243 ký tự** (201 của widget + 42 của separator) → 3 hàng thì hàng dài nhất **buộc phải ≥ 81**. Layout hiện tại cần terminal **≥ 85 cột**, hẹp hơn sẽ bị cắt đuôi bằng `…`. Muốn vừa terminal 80 cột, giảm độ rộng: `cwd` → `segments: 2` (−8) và `model-provider` → `model` (−11) ⇒ hàng dài nhất còn ~65.
+
 > Config dùng `"iconMode": "nerd"` nên terminal cần **Nerd Font** (bản patch) mới hiện đủ icon. Trong `fonts/` có JetBrains Mono **gốc** (không patch) — xem [`fonts/README.md`](./fonts/README.md) để biết cách cài bản Nerd Font hoặc đổi sang `emoji`/`text`.
 
 ---

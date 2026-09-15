@@ -46,6 +46,9 @@
           "widgetId": "tps",
           "icon": " "
         }
+      },
+      {
+        "type": "total-time"
       }
     ],
     [
@@ -65,7 +68,28 @@
         "type": "cost"
       },
       {
-        "type": "total-time"
+        "type": "external-status",
+        "options": {
+          "externalStatusKey": "mcp"
+        }
+      },
+      {
+        "type": "external-status",
+        "options": {
+          "externalStatusKey": "background-tasks"
+        }
+      },
+      {
+        "type": "external-status",
+        "options": {
+          "externalStatusKey": "goal"
+        }
+      },
+      {
+        "type": "external-status",
+        "options": {
+          "externalStatusKey": "usage"
+        }
       }
     ]
   ],
@@ -76,5 +100,19 @@
   "minimalist": false,
   "terminal": {
     "widthMode": "full"
+  },
+  "extensionStatusRow": {
+    "hiddenKeys": [
+      "background-tasks",
+      "goal",
+      "mcp",
+      "usage"
+    ],
+    "knownKeys": [
+      "background-tasks",
+      "goal",
+      "mcp",
+      "usage"
+    ]
   }
 }
