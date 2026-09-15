@@ -81,6 +81,8 @@ zuey-pi-setup/
 ├── scripts/
 │   ├── pi-setup-backup.sh           đóng gói setup hiện tại của máy đang chạy
 │   └── pi-setup-restore.sh          dựng lại setup trên máy mới
+├── backups/
+│   └── pi-setup-portable.tar.gz     bundle sẵn để tải (đã lọc — xem bên dưới)
 └── config/                          snapshot setup (plain file, diff được bằng git)
     ├── .pi-setup-exclude           glob loại trừ — backup tôn trọng file này
     ├── settings.json               manifest 17 packages + model/theme/compaction
@@ -108,6 +110,26 @@ zuey-pi-setup/
 ```bash
 ./scripts/pi-setup-backup.sh --config-dir config   # → "loại trừ: 82 file khớp .pi-setup-exclude"
 ```
+
+Từ bản hiện tại, cùng file đó cũng dùng được cho **chế độ tarball** qua `--exclude-file`:
+
+```bash
+./scripts/pi-setup-backup.sh -o backups/pi-setup-portable.tar.gz \
+  --exclude-file config/.pi-setup-exclude
+```
+
+### `backups/pi-setup-portable.tar.gz`
+
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **5 file** — `settings.json` (17 package), `APPEND_SYSTEM.md`, `models-store.json`, `extensions/pi-footer.json` và `extensions/pi-footer-cache-tps.ts`.
+
+Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
+
+| Bị loại | Vì sao |
+|---|---|
+| `extensions/orca-*.ts` (3 file, 1 239 dòng) | code do Orca sinh — bạn đã chọn không đưa lên public |
+| `extensions/agentkit-*` (95 file) | chứa `native-skill-paths.json` + `native-skill-hashes.json` (**path tuyệt đối**, danh sách 107 skill) và `hooks/.logs/hook-log.jsonl` (log hoạt động) |
+
+Restore bundle này cho kết quả **giống hệt** `config/` (17 extension + statusline). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
 
 ---
 

@@ -1,6 +1,6 @@
-# Artifact sinh ra khi chạy scripts/pi-setup-backup.sh (không track trong git)
-pi-setup-portable.tar.gz
-pi-setup-portable.tar.gz.tmp.*
+# Artifact tạm ở gốc repo (không track). Bundle trong backups/ thì CÓ track.
+/pi-setup-portable.tar.gz
+/pi-setup-portable.tar.gz.tmp.*
 
 # Log cài đặt của restore
 pi-setup-install.log
