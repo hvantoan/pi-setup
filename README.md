@@ -4,7 +4,7 @@
 
 **Portable snapshot của setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 20 extensions trên máy mới.**
 
-pi `0.85.1` · Node `24` · macOS/Linux · cập nhật 2026-09-15
+pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-15
 
 </div>
 
@@ -47,6 +47,38 @@ pi auth check --provider opencode-go    # và /login trong pi cho từng provide
 
 Chi tiết đầy đủ, bảng copy/không-copy, xử lý sự cố: **[`docs/pi-setup-migration.md`](./docs/pi-setup-migration.md)**.
 
+> **Windows:** script là **bash** → chạy trong **Git Bash** (hoặc WSL), **không** chạy bằng PowerShell/cmd. Xem [Windows (Git Bash)](#windows-git-bash).
+
+---
+
+## Windows (Git Bash)
+
+Đã chạy thật end-to-end trên **Windows 11 + Git Bash (MSYS2, bash 5.3)**: restore → `--install` → `--verify` → backup → tạo lại bundle. Không cần sửa gì thêm ngoài các lệnh ở Quickstart.
+
+| Khác biệt trên Windows | Trạng thái |
+|---|---|
+| Shell | Bắt buộc **Git Bash** (hoặc WSL). Script dùng POSIX bash + `tar`/`gzip`/`find`/`awk`… của MSYS |
+| Cài Node | Thường qua [`fnm`](https://github.com/Schniz/fnm) thay vì `nvm`. `pi` cài global **theo từng Node version** → `pi` chỉ có trong shell đã `fnm use` (đường dẫn kiểu `.../fnm_multishells/<id>/pi`) |
+| Đếm package (`--verify`) | Dùng **`node`** (từ bản này), không dùng `python3` — Windows hay thiếu `python3` hoặc gặp stub Microsoft Store |
+| `shasum` | Git Bash không có → script tự fallback sang `sha256sum` |
+| Đường dẫn truyền cho `pi` con | MSYS tự convert (`/c/Users/...` và `/tmp/...` → `C:/Users/...`) — đã kiểm chứng với `PI_CODING_AGENT_DIR` |
+| `--scratch` | Chạy được: `mktemp -d` + convert path cho tiến trình `pi` con |
+| CRLF | bash của Git Bash **chịu được CRLF** (đã test bằng bản copy CRLF). `.gitattributes` vẫn có `*.sh text eol=lf` để chắc ăn |
+| Symlink | Tạo symlink cần Developer Mode, nhưng repo chỉ **đọc/backup** symlink có sẵn nên không cần |
+| `tar` | Trong Git Bash dùng GNU tar (`/usr/bin/tar`), không phải `C:\Windows\System32\tar.exe` |
+| Font terminal | **Cần Nerd Font** nếu để `iconMode: "nerd"` — xem [Font terminal](#font-terminal-bắt-buộc-nerd-font) |
+
+Ví dụ đầy đủ trên Windows:
+
+```bash
+# trong Git Bash
+fnm use 24
+npm i -g @earendil-works/pi-coding-agent@0.85.1
+git clone https://github.com/mrgoonie/zuey-pi-setup.git && cd zuey-pi-setup
+./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # thử an toàn
+./scripts/pi-setup-restore.sh --install --verify                                 # làm thật
+```
+
 ---
 
 ## Screenshots
@@ -88,7 +120,7 @@ zuey-pi-setup/
     ├── settings.json               manifest 20 packages + model/theme/compaction
     ├── advisor.json                config pi-advisor-flow (ở gốc config dir)
     ├── 99extensions.json           config họ 99percentpeople (namespace todo)
-    ├── pi-lens.json                config pi-lens — nằm ở ~/.pi-lens/ NGOÀI config dir
+    ├── pi-lens-config.json          config pi-lens — nằm ở ~/.pi-lens/ NGOÀI config dir
     ├── external-configs.txt        manifest: file nào đặt về đâu khi restore
     ├── APPEND_SYSTEM.md            system prompt phụ
     ├── models-store.json           catalog model (khỏi chờ refresh 4h)
@@ -142,18 +174,26 @@ Vài extension để config **bên ngoài** `~/.pi/agent/`, nên không thể l�
 ```bash
 # trong scripts/pi-setup-backup.sh
 EXTERNAL_CONFIGS=(
-	"~/.pi-lens/config.json:pi-lens.json"
+	"~/.pi-lens/config.json:pi-lens-config.json"
 )
 ```
 
-- Backup copy mỗi file còn tồn tại vào artifact dưới tên `<tên>` (`pi-lens.json`), kèm **`external-configs.txt`** — manifest ghi `<tên>=<đường dẫn dạng ~>`.
+- Backup copy mỗi file còn tồn tại vào artifact dưới tên `<tên>` (`pi-lens-config.json`), kèm **`external-configs.txt`** — manifest ghi `<tên>=<đường dẫn dạng ~>`.
 - Restore đọc manifest đó rồi đặt file về đúng chỗ (tự `mkdir -p`, tự snapshot bản cũ thành `*.bak.<timestamp>`).
 - Manifest dùng dạng `~` chứ không phải `/Users/...` nên artifact vẫn không lộ path của máy.
 - Thêm config ngoài mới = thêm 1 dòng vào `EXTERNAL_CONFIGS`; không phải sửa restore.
 
+> ⚠️ **Tên artifact không được trùng basename config của `pi-lens`:** `pi-lens.json`,
+> `pi-lsp.json`, `.pi-lens.json`. pi-lens walk ngược lên từ **mỗi** thư mục nó resolve
+> config và khớp **đúng basename**, nên artifact `config/pi-lens.json` từng bị đọc như
+> project config deprecated → 4 warning `PILENS_CFG_0003` + 2 `PILENS_CFG_0001` mỗi lần
+> làm việc trong repo (và `format`/`autofix` của nó bị áp như project setting). Đổi tên
+> thành `pi-lens-config.json` là hết; script có guard `pi_lens_reserved_name` cảnh báo nếu
+> sau này ai thêm lại tên cũ.
+
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **9 file** — `settings.json` (20 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `extensions/provider-fallback.json`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **9 file** — `settings.json` (20 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `extensions/provider-fallback.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -247,9 +287,59 @@ Statusline được xếp **đúng 3 hàng**, không bỏ widget nào:
 
 **Giới hạn độ rộng:** tổng nội dung là **243 ký tự** (201 của widget + 42 của separator) → 3 hàng thì hàng dài nhất **buộc phải ≥ 81**. Layout hiện tại cần terminal **≥ 85 cột**, hẹp hơn sẽ bị cắt đuôi bằng `…`. Muốn vừa terminal 80 cột, giảm độ rộng: `cwd` → `segments: 2` (−8) và `model-provider` → `model` (−11) ⇒ hàng dài nhất còn ~65.
 
-> Config dùng `"iconMode": "nerd"` nên terminal cần **Nerd Font** (bản patch) mới hiện đủ icon. Trong `fonts/` có JetBrains Mono **gốc** (không patch) — xem [`fonts/README.md`](./fonts/README.md) để biết cách cài bản Nerd Font hoặc đổi sang `emoji`/`text`.
+> ⚠️ Config dùng `"iconMode": "nerd"` nên terminal cần **Nerd Font** (bản patch) mới hiện đủ icon. Trong `fonts/` có JetBrains Mono **gốc** (không patch) — cài bản gốc rồi trỏ terminal vào đó là **icon vỡ**: xem [Font terminal](#font-terminal-bắt-buộc-nerd-font).
 
 Ảnh thật của layout này: xem [Screenshots](#screenshots).
+
+### Font terminal: bắt buộc Nerd Font
+
+**Đây không phải chi tiết nhỏ.** Mọi icon của statusline là codepoint **Private Use Area** của Nerd Fonts:
+
+| Widget | Codepoint | JetBrains Mono (gốc) | DankMono Nerd Font Mono | FantasqueSansMono NF Mono |
+|---|---|---|---|---|
+| `cwd` | U+F07C | ❌ thiếu | ✅ | ✅ |
+| `model-provider` | U+F06A9 | ❌ thiếu | ✅ | ❌ thiếu |
+| `thinking-level` | U+F0208 | ❌ thiếu | ✅ | ❌ thiếu |
+| `context-bar` | U+F035B | ❌ thiếu | ✅ | ❌ thiếu |
+| `cache-hit-rate` | U+F04CE | ❌ thiếu | ✅ | ❌ thiếu |
+| `total-time` | U+F13AB | ❌ thiếu | ✅ | ❌ thiếu |
+| `git-branch` | U+E725 | ❌ thiếu | ✅ | ✅ |
+| `git-diff` | U+E702 | ❌ thiếu | ✅ | ✅ |
+| `cost` | U+F04A3 | ❌ thiếu | ✅ | ❌ thiếu |
+| `cache_ttl`, `tps` (event) | U+F01BC, U+EAF3 | ❌ thiếu | ✅ | ❌ thiếu |
+
+JetBrains Mono **gốc** (bản trong `fonts/`) thiếu **11/11** icon. Khi thiếu, terminal **không** để trống ô — nó fallback sang font khác có codepoint đó, nên icon hiện ra thành **hình vô nghĩa** (kim cương ◆, ngôi sao ✦, hay dấu `?`), chứ không phải lỗi config.
+
+**Sửa — chọn 1 trong 2:**
+
+**A. Dùng Nerd Font cho terminal** (giữ nguyên icon đẹp, khuyến nghị). Bản **Mono** (single-width) là bắt buộc cho TUI, không dùng bản non-Mono vì icon sẽ rộng 2 ô và lệch cột.
+
+```bash
+# macOS
+brew install --cask font-jetbrains-mono-nerd-font     # hoặc font-dank-mono-nerd-font
+```
+
+```powershell
+# Windows: cài font theo user (copy + đăng ký registry), hoặc bôi đen .otf/.ttf → chuột phải → Install
+$dst = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
+Copy-Item .\DankMonoNerdFontMono-Regular.otf $dst
+New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts" `
+  -Name "DankMono Nerd Font Mono (TrueType)" -Value "$dst\DankMonoNerdFontMono-Regular.otf" -PropertyType String -Force
+```
+
+Rồi trỏ terminal vào font đó. Với Windows Terminal — sửa `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json`, đặt ở `profiles.defaults` để áp cho **mọi** profile (profile có `font` riêng sẽ **ghi đè** defaults, nên phải sửa cả profile đó):
+
+```json
+"profiles": {
+  "defaults": {
+    "font": { "face": "DankMono Nerd Font Mono", "size": 12 }
+  }
+}
+```
+
+> Profile nào đã có `font` riêng thì sửa `face` của chính profile đó (Windows Terminal tự hot-reload file `settings.json`; nên backup file này trước khi sửa).
+
+**B. Không muốn cài font patch:** đổi `"iconMode": "nerd"` → `"emoji"` (dùng 📁… render bằng Segoe UI Emoji trên Windows / Apple Color Emoji trên macOS) hoặc `"text"` (chữ thuần, không icon). Đổi lại: icon to hơn và statusline kém gọn.
 
 ---
 
@@ -384,6 +474,8 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 | `--verify` | **20/20** ở lần chạy gần nhất (pi-lens + pi-todo + notify), **19/19 · 18/18 · 17/17 · 16/16** ở các snapshot trước |
 | Extension **thực sự chạy** (không chỉ cài) | ✅ 18 `extension_ui_request`, 0 lỗi load, đủ surface `subagent-async`, `mcp`, `goal`, `background-tasks`, `usage`, `pi-footer`, `advisor-scout`, `advisor-usage`, `pi-lens-lsp` |
 | Config **ngoài** config dir được restore | ✅ ghi đúng `~/.pi-lens/config.json` (snapshot bản cũ trước khi ghi đè) |
+| Restore từ **bundle mới** vào `HOME` giả | ✅ 9 file, config ngoài ghi đúng `<HOME>/.pi-lens/config.json`, nội dung khớp `config/pi-lens-config.json` |
+| Artifact trùng basename legacy của pi-lens | ✅ đổi `config/pi-lens.json` → `pi-lens-config.json`: repro với cwd=`config/` **6 → 12** warning `PILENS_CFG_0003/0001` trước khi sửa, **delta 0** sau khi sửa, resolution `documents=1 legacy=0 records=0` |
 | Clone repo public rồi restore | ✅ 11 file, 0 file bị loại, 153 s, verify khớp, 0 lỗi |
 | `auth.json` trong dir mới | `{}` → không rò secret |
 | Chạy lần 2 | log rỗng → idempotent |
@@ -392,6 +484,19 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 | `--no-statusline` | ✅ `pi-footer.json` biến mất khỏi bundle (SHA khác bản mặc định) |
 | `--hooks` + `.pi-setup-exclude` | ✅ hooks sống sót, in cảnh báo "ghi đè", 54 file còn lại |
 | `--auth` khi restore | ✅ có `auth.json.bak.<ts>` giữ credential cũ trước khi ghi đè |
+
+### Windows 11 + Git Bash (MSYS2, bash 5.3)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Restore thật (`--from-config config --install --verify`) | ✅ **20/20**, cài **88 s**, module dirs `0 → 203` |
+| `pi list` trong bản restore | ✅ 20 package |
+| Config **ngoài** config dir | ✅ ghi đúng `%USERPROFILE%\.pi-lens\config.json`, nội dung khớp `config/pi-lens-config.json` |
+| Restore từ bundle vào `HOME` giả | ✅ 9 file, config ngoài ghi đúng |
+| MSYS convert path cho `pi` con | ✅ `PI_CODING_AGENT_DIR=/tmp/...` → `C:/Users/.../Temp/...` |
+| Tạo lại bundle trên Windows | ✅ 9 file, 7.9 KB, sạch (không còn `._*` AppleDouble như bản tạo trên macOS) |
+| Đếm package không cần `python3` | ✅ `node -e` → `20` |
+| CRLF trong script | ✅ bash 5.3.15 chịu CRLF (test bằng bản copy CRLF, exit 0) |
 
 ---
 
@@ -403,7 +508,9 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 - **3 extension `orca-*.ts`** và **2 thư mục `agentkit-*`** không nằm trong repo → Orca/AgentKit tự sinh lại.
 - **`pi-provider-fallback` config** chỉ có sau khi chạy `/fallback-config`; trước đó không có gì để backup.
 - **`pi-advisor-flow` config** (`~/.pi/agent/advisor.json`, nằm ở **gốc** config dir chứ không trong `extensions/`) chỉ tồn tại sau khi chạy `/advisor` hoặc `/advisor-settings`. Backup đã liệt kê riêng file này nên sẽ tự kèm khi nó xuất hiện.
-- **`pi` cài global theo từng Node version của nvm** → `nvm use` version khác có thể làm mất lệnh `pi`.
+- **Script cần shell POSIX** → trên Windows phải chạy trong **Git Bash** hoặc **WSL**; PowerShell/cmd không chạy được script này.
+- **Icon statusline cần Nerd Font** → dùng JetBrains Mono **gốc** trong `fonts/` sẽ làm icon vỡ thành ◆/✦/`?`; xem [Font terminal](#font-terminal-bắt-buộc-nerd-font).
+- **`pi` cài global theo từng Node version** → `nvm use` / `fnm use` sang version khác có thể làm mất lệnh `pi`; cài lại global cho version đó.
 
 ---
 

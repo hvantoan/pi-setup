@@ -375,9 +375,11 @@ scan_secrets() { # $1 = thư mục chứa nội dung
 	return 0
 }
 
+# Đếm package bằng NODE, không dùng python3 — xem chú thích cùng chỗ trong
+# pi-setup-restore.sh (Windows thường không có python3).
 pkg_count() {
-	if [ -f "$AGENT_DIR/settings.json" ] && command -v python3 >/dev/null 2>&1; then
-		python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1])).get("packages",[])))' "$AGENT_DIR/settings.json" 2>/dev/null || echo '?'
+	if [ -f "$AGENT_DIR/settings.json" ] && command -v node >/dev/null 2>&1; then
+		node -e 'try{process.stdout.write(String((JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).packages||[]).length))}catch(e){process.exit(1)}' "$AGENT_DIR/settings.json" 2>/dev/null || echo '?'
 	else
 		echo '?'
 	fi

@@ -199,9 +199,12 @@ fi
 	exit 0
 }
 
+# Đếm package bằng NODE, không dùng python3: pi chắc chắn có Node, còn python3 thì không
+# (Windows thường thiếu, hoặc gặp stub Microsoft Store báo lỗi) — '?' ở đây sẽ làm
+# --verify luôn cảnh báo sai dù extension đã cài đủ.
 PKG_COUNT="?"
-if command -v python3 >/dev/null 2>&1; then
-	PKG_COUNT="$(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1])).get("packages",[])))' "$TARGET/settings.json" 2>/dev/null || echo '?')"
+if command -v node >/dev/null 2>&1; then
+	PKG_COUNT="$(node -e 'try{process.stdout.write(String((JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).packages||[]).length))}catch(e){process.exit(1)}' "$TARGET/settings.json" 2>/dev/null || echo '?')"
 fi
 
 info ""

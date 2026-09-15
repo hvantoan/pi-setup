@@ -20,6 +20,8 @@ Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 20 extensi
 
 **Không cần** copy thư mục `npm/` (244 MB cache) hay `auth.json` (secret).
 
+> **Windows:** mọi lệnh ở đây chạy trong **Git Bash** (không PowerShell/cmd), Node cài qua `fnm` thay vì `nvm`, và icon statusline cần **Nerd Font** — xem [Windows (Git Bash)](#windows-git-bash).
+
 ---
 
 ## Nguyên tắc: `settings.json` là manifest
@@ -49,7 +51,7 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 | `models-store.json` | 28 KB | ✅ | catalog model; có sẵn thì khỏi chờ refresh 4 giờ |
 | `99extensions.json` | — | ✅ **mặc định** | config họ 99percentpeople (`@99percentpeople/pi-todo`), ở gốc config dir; chỉ có sau khi dùng `/99settings` |
 | `~/.unipi/config/notify/config.json` | — | ❌ **credential** | config `@pi-unipi/notify`: chứa token Gotify + botToken/chatId Telegram → **cố ý** không đưa vào; máy mới chạy lại `/unipi:notify-set-gotify` + `/unipi:notify-set-tg` |
-| `~/.pi-lens/config.json` | 136 B | ✅ **mặc định** | config `pi-lens`, nằm **NGOÀI** config dir → lấy qua `EXTERNAL_CONFIGS`, vào artifact thành `pi-lens.json` + manifest `external-configs.txt` |
+| `~/.pi-lens/config.json` | 136 B | ✅ **mặc định** | config `pi-lens`, nằm **NGOÀI** config dir → lấy qua `EXTERNAL_CONFIGS`, vào artifact thành `pi-lens-config.json` + manifest `external-configs.txt` (⚠️ **không** đặt tên artifact là `pi-lens.json`: trùng basename legacy của pi-lens → bị đọc như project config deprecated, xem README) |
 | `advisor.json` | — | ✅ **mặc định** | config `pi-advisor-flow`, ở **gốc** config dir (không trong `extensions/`) nên liệt kê riêng; chỉ có sau `/advisor` hoặc `/advisor-settings` |
 | `advisor-outcomes.jsonl`, `advisor-outcomes-salt` | — | ❌ | log outcome + salt theo máy của `pi-advisor-flow` → nằm trong `.pi-setup-exclude` |
 | `skills/` | 24 MB | ⚠️ opt-in | `--skills` — dereference symlink sang AgentKit (`~/.agents/skills`) |
@@ -69,6 +71,7 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 ```
 zuey-pi-setup/
 ├── README.md
+├── .gitattributes                   ← giữ LF cho *.sh (tránh CRLF khi clone trên Windows)
 ├── docs/
 │   └── pi-setup-migration.md        ← file này (hướng dẫn chi tiết)
 ├── scripts/
@@ -101,7 +104,14 @@ npm i -g @earendil-works/pi-coding-agent@0.85.1
 pi --version                                        # phải ra 0.85.1
 ```
 
-> pi cài **theo từng Node version** của nvm. Nếu sau này `nvm use` sang version khác mà không thấy lệnh `pi`, đó là lý do — cài lại global cho version đó.
+```bash
+# Windows (Git Bash) — thường dùng fnm thay nvm
+fnm install 24 && fnm use 24
+npm i -g @earendil-works/pi-coding-agent@0.85.1
+pi --version                                        # phải ra 0.85.1
+```
+
+> pi cài **theo từng Node version** của `nvm`/`fnm`. Nếu sau này `nvm use` / `fnm use` sang version khác mà không thấy lệnh `pi`, đó là lý do — cài lại global cho version đó.
 
 ## Bước 2 — restore
 
@@ -120,7 +130,7 @@ Script sẽ:
 
 1. Snapshot `settings.json` hiện có thành `settings.json.bak.<YYYYmmdd-HHMMSS>` (nếu đã tồn tại),
 2. Copy 4 mục setup vào `~/.pi/agent`,
-3. Chạy pi headless 1 lần → pi tự cài 20 extension (~150–220 s),
+3. Chạy pi headless 1 lần → pi tự cài 20 extension (~150–220 s; **88 s** trên Windows + Git Bash),
 4. Verify số extension khớp với `settings.json`.
 
 ## Bước 3 — login lại provider
@@ -134,6 +144,26 @@ pi auth check --provider openai-codex
 ```
 
 Trong pi: `/login`, hoặc `pi auth login` theo hướng dẫn `/login`. Kiểm tra model đã thấy chưa: `pi --list-models`.
+
+---
+
+## Windows (Git Bash)
+
+Script là **bash** → trên Windows chạy trong **Git Bash** (hoặc WSL). PowerShell/cmd không chạy được.
+
+| Khác biệt | Chi tiết |
+|---|---|
+| Cài Node | Dùng [`fnm`](https://github.com/Schniz/fnm). `pi` cài global **theo từng Node version** → chỉ có trong shell đã `fnm use` (đường dẫn kiểu `.../fnm_multishells/<id>/pi`) |
+| Đếm package / `--verify` | Dùng **`node`** (không cần `python3`) — Windows hay thiếu `python3` hoặc gặp stub Microsoft Store |
+| `shasum` | Không có trong Git Bash → script tự dùng `sha256sum` |
+| Path cho `pi` con | MSYS tự convert `PI_CODING_AGENT_DIR` (`/c/Users/...`, `/tmp/...` → `C:/Users/...`) |
+| `config/pi-lens.json` | Đích là `%USERPROFILE%\.pi-lens\config.json` |
+| CRLF | bash của Git Bash chịu CRLF; repo vẫn có `.gitattributes` (`*.sh text eol=lf`) cho chắc |
+| `tar` | Trong Git Bash là GNU tar (`/usr/bin/tar`), không phải `C:\Windows\System32\tar.exe` |
+| Symlink | Repo chỉ **đọc/backup** symlink có sẵn → không cần Developer Mode |
+| **Font terminal** | `iconMode: "nerd"` cần **Nerd Font bản Mono**. Dùng JetBrains Mono **gốc** (bản trong `fonts/`) → icon vỡ thành ◆/✦/`?` vì thiếu **11/11** codepoint PUA. Sửa: trỏ terminal vào `DankMono Nerd Font Mono` (hoặc Nerd Font khác), hoặc đổi `iconMode` sang `emoji`/`text` |
+
+Số đo thật trên **Windows 11 + Git Bash (MSYS2, bash 5.3)**: restore `20/20`, cài **88 s**, module dirs `0 → 203`.
 
 ---
 
@@ -338,6 +368,17 @@ cd /tmp/verify-clone
 | Không tìm thấy nguồn | ✅ báo rõ đã thử đường dẫn nào, exit 1 |
 | Bundle hỏng | ✅ ERR trap chỉ đúng số dòng |
 
+### Windows 11 + Git Bash (MSYS2, bash 5.3)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Restore thật (`--from-config config --install --verify`) | ✅ **20/20**, cài **88 s**, module dirs `0 → 203` |
+| Config ngoài config dir | ✅ ghi đúng `%USERPROFILE%\.pi-lens\config.json`, khớp `config/pi-lens-config.json` |
+| MSYS convert path cho `pi` con | ✅ `/tmp/...` → `C:/Users/.../Temp/...` |
+| Tạo lại bundle trên Windows | ✅ 9 file, 7.9 KB, sạch (không có `._*` AppleDouble như bản tạo trên macOS) |
+| Đếm package bằng `node` (không cần `python3`) | ✅ ra `20` |
+| Script CRLF | ✅ bash 5.3.15 chịu CRLF (test bằng bản copy CRLF, exit 0) |
+
 ---
 
 ## Xử lý sự cố
@@ -350,6 +391,10 @@ cd /tmp/verify-clone
 | `no credentials` / 401 | `/login`, hoặc `pi auth check --provider <name>` |
 | Model không hiện | `pi --list-models`; kiểm tra `enabledModels` trong `settings.json` |
 | `command not found: pi` sau khi `nvm use` | pi cài theo từng Node version → `npm i -g @earendil-works/pi-coding-agent` lại |
+| Icon statusline hiện ◆/✦/`?` thay vì icon | terminal đang dùng font **không patch** → cài Nerd Font bản **Mono** rồi trỏ terminal vào đó, hoặc đổi `iconMode` sang `emoji`/`text` (xem [Windows (Git Bash)](#windows-git-bash)) |
+| `pi` không thấy sau `fnm use` (Windows) | pi cài theo từng Node version của fnm → cài lại global trong shell đó |
+| PowerShell/cmd báo lỗi cú pháp khi chạy script | script là bash → chạy trong **Git Bash** hoặc WSL |
+| `--verify` in `?/20` | `node` không có trong PATH, hoặc artifact không có `settings.json` (`node -v` để kiểm tra) |
 | Script thoát mà không rõ lỗi | đã có ERR trap in số dòng; trừ khi bạn tự sửa script |
 
 ---
@@ -401,10 +446,12 @@ loại trừ: 82 file khớp .pi-setup-exclude (extensions/orca-*.ts extensions/
 
 ## Checklist
 
-- [ ] Máy mới: Node đúng version (nvm) → `npm i -g @earendil-works/pi-coding-agent@0.85.1`
+- [ ] Máy mới: Node đúng version (`nvm` — hoặc `fnm` trên Windows) → `npm i -g @earendil-works/pi-coding-agent@0.85.1`
+- [ ] **Windows:** đang ở trong **Git Bash** (không PowerShell/cmd)
 - [ ] `git clone https://github.com/mrgoonie/zuey-pi-setup.git`
 - [ ] `./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify` (thử an toàn)
-- [ ] `./scripts/pi-setup-restore.sh --install --verify` → phải ra `16/16 extension khớp`
+- [ ] `./scripts/pi-setup-restore.sh --install --verify` → phải ra `20/20 extension khớp`
+- [ ] **Windows/font:** terminal đã dùng **Nerd Font** (bản Mono) hoặc `iconMode` đã đổi sang `emoji`/`text` — nếu không, icon statusline sẽ vỡ
 - [ ] `/login` cho `opencode-go`, `deepseek`, `openai-codex`
 - [ ] `pi auth check --provider opencode-go` → OK
 - [ ] Thử 1 extension, ví dụ `/btw <câu hỏi>` (cần TUI mode)
