@@ -1,1 +1,1 @@
-pi-lens.json=~/.pi-lens/config.json
+pi-lens-config.json=~/.pi-lens/config.json

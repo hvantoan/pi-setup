@@ -82,9 +82,25 @@ SKIP=()
 # token Gotify và botToken/chatId Telegram → đưa vào artifact là lộ credential lên
 # repo public. Config đó phải thiết lập lại trên máy mới bằng
 # /unipi:notify-set-gotify và /unipi:notify-set-tg.
+# ⚠ Tên file trong artifact KHÔNG được trùng basename config của pi-lens:
+#   `pi-lens.json` (legacy, undotted), `pi-lsp.json`, `.pi-lens.json`.
+# pi-lens walk ngược lên từ MỖI thư mục nó resolve config và khớp ĐÚNG basename,
+# nên một artifact tên `pi-lens.json` nằm trong config/ bị đọc như project config
+# deprecated → warning PILENS_CFG_0003/0001 mỗi lần làm việc trong repo (và
+# `format`/`autofix` của nó bị áp như project setting). Vì thế đặt tên khác đi.
+# Tilde trong danh sách dưới là DỮ LIỆU (không phải path cần expand) — `${src/#\~/$HOME}`
+# trong ext_collect mới expand. shellcheck SC2088 báo nhầm nên tắt riêng cho statement này.
+# shellcheck disable=SC2088
 EXTERNAL_CONFIGS=(
-	"~/.pi-lens/config.json:pi-lens.json"
+	"~/.pi-lens/config.json:pi-lens-config.json"
 )
+# Guard: cảnh báo nếu ai đó thêm artifact trùng basename reserved của pi-lens.
+pi_lens_reserved_name() {
+	case "$1" in
+		pi-lens.json | pi-lsp.json | .pi-lens.json) return 0 ;;
+	esac
+	return 1
+}
 # Tên file manifest đi kèm artifact, cho restore biết file ngoài nào cần đặt ở đâu.
 EXTERNAL_MANIFEST="external-configs.txt"
 
@@ -97,6 +113,9 @@ ext_collect() {
 		src="${entry%%:*}"
 		name="${entry##*:}"
 		expanded="${src/#\~/$HOME}"
+		if pi_lens_reserved_name "$name"; then
+			warn "tên artifact '$name' trùng basename config của pi-lens — nó sẽ bị đọc như project config (đổi tên, VD pi-lens-config.json)"
+		fi
 		if [ -f "$expanded" ]; then
 			EXT_SRC+=("$expanded")
 			EXT_NAME+=("$name")
