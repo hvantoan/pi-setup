@@ -76,7 +76,8 @@ zuey-pi-setup/
 │   └── pi-setup-migration.md        ← file này (hướng dẫn chi tiết)
 ├── scripts/
 │   ├── pi-setup-backup.sh           ← đóng gói setup hiện tại
-│   └── pi-setup-restore.sh          ← dựng lại trên máy mới
+│   ├── pi-setup-restore.sh          ← dựng lại trên máy mới
+│   └── pi-setup-verify-advisor.mjs  ← kiểm tra advisor.json theo schema thật
 └── config/                          ← snapshot setup, đọc/diff được
     ├── .pi-setup-exclude           ← glob loại trừ (backup tôn trọng file này)
     ├── settings.json
@@ -204,9 +205,26 @@ Config: `~/.pi/agent/extensions/provider-fallback.json` → **backup mặc đị
 
 ---
 
-## Hai script
+## Scripts
 
-Cả hai **không hỏi xác nhận** — rủi ro được xử lý bằng snapshot + cảnh báo ra `stderr`, để chạy được trong script/CI.
+Hai script setup **không hỏi xác nhận** — rủi ro được xử lý bằng snapshot + cảnh báo ra `stderr`, để chạy được trong script/CI. Script thứ ba chỉ **đọc**.
+
+### `pi-setup-verify-advisor.mjs`
+
+`advisor.json` là file cấu hình duy nhất trong repo mà **sai tên key vẫn im lặng**: `pi-advisor-flow` giữ nguyên key lạ rồi chỉ notify `contains unrecognized key(s) ... They were preserved but ignored`, và key đó **không có hiệu lực**. Tên key thật nằm trong `CONFIG_SCHEMA` của bundle, không nằm ở tài liệu — nên script trích schema từ chính bundle đang cài rồi kiểm tra lại:
+
+```bash
+node scripts/pi-setup-verify-advisor.mjs            # config/advisor.json trong repo
+node scripts/pi-setup-verify-advisor.mjs --live     # + ~/.pi/agent/advisor.json, và so 2 file
+```
+
+Bắt: key lạ, sai type, giá trị ngoài enum, ref không có dạng `provider/model`, JSON hỏng/thiếu file, snapshot lệch bản đang chạy.
+
+| Exit | Nghĩa |
+|---|---|
+| `0` | sạch |
+| `1` | config sai (kể cả JSON hỏng, thiếu file, snapshot lệch) |
+| `2` | lỗi môi trường (không thấy bundle `pi-advisor-flow`, bundle đổi định dạng, tham số sai) |
 
 ### `scripts/pi-setup-backup.sh`
 

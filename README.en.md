@@ -116,7 +116,8 @@ zuey-pi-setup/
 │   └── originals/                   unprocessed CleanShot originals (gitignored)
 ├── scripts/
 │   ├── pi-setup-backup.sh           packages the current machine's setup
-│   └── pi-setup-restore.sh          rebuilds that setup on a new machine
+│   ├── pi-setup-restore.sh          rebuilds that setup on a new machine
+│   └── pi-setup-verify-advisor.mjs  validates advisor.json against pi-advisor-flow's real schema
 ├── backups/
 │   └── pi-setup-portable.tar.gz     ready-to-download bundle (filtered — see below)
 └── config/                          setup snapshot (plain files, git-diffable)
@@ -420,7 +421,27 @@ Its config lives **outside** pi's config dir, which is why `scripts/pi-setup-bac
 
 ## Scripts
 
-Neither script asks for confirmation — they are safe to run from scripts/CI. Risk is handled with snapshots plus warnings on `stderr`.
+The two setup scripts **never ask for confirmation** — they are safe to run from scripts/CI. Risk is handled with snapshots plus warnings on `stderr`. The third script only **reads**.
+
+### `pi-setup-verify-advisor.mjs`
+
+`pi-advisor-flow` does not error on an unknown key in `advisor.json`: it keeps the key and only notifies `contains unrecognized key(s) ... They were preserved but ignored` — and that key has **no effect**. A misspelled key therefore looks configured while doing nothing.
+
+This script extracts `CONFIG_SCHEMA` from the installed bundle and replays the two checks the extension runs while loading: `unknownConfigKeys()` (unknown key → ignored) and `validate*Values()` (wrong type / outside an enum).
+
+```bash
+node scripts/pi-setup-verify-advisor.mjs            # the file in this repo (config/advisor.json)
+node scripts/pi-setup-verify-advisor.mjs --live     # + the live ~/.pi/agent/advisor.json, and compares the two
+node scripts/pi-setup-verify-advisor.mjs --file <path>
+```
+
+| Exit | Meaning |
+|---|---|
+| `0` | clean |
+| `1` | bad config: unknown key, wrong type, outside enum, unparsable JSON, missing file, repo snapshot diverged from the live file |
+| `2` | environment problem: no `pi-advisor-flow` bundle, bundle changed format, bad arguments |
+
+> Why it exists: I once wrote `advisorFailureMode` (taken from an internal variable name in the bundle) when the real key is `gateFailureMode` — the file looked right, did **nothing**, and the warning showed up much later. This script catches exactly that class of mistake.
 
 ### `pi-setup-backup.sh`
 
@@ -503,6 +524,14 @@ Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, n
 | Bundle rebuilt on Windows | ✅ 9 files, 7.9 KB, clean (no `._*` AppleDouble junk like the macOS-built one) |
 | Package counting without `python3` | ✅ `node -e` → `20` |
 | CRLF in scripts | ✅ bash 5.3.15 tolerates CRLF (tested with a CRLF copy, exit 0) |
+
+### Verify script (`advisor.json`)
+
+| Check | Result |
+|---|---|
+| Config matrix (real runs, exit codes compared) | ✅ **6/6**: clean config `0` · unknown key `1` · outside enum `1` · wrong type `1` · ref missing `provider/model` `1` · missing `gateFailureMode` still `0` |
+| Environment branches | ✅ **7/7**: `--live` compares both files `0` · missing `--pkg` `2` · bundle without `CONFIG_SCHEMA` `2` · `--help` `0` · bad argument `2` · unparsable JSON `1` · missing file `1` |
+| Schema extraction | ✅ **31 keys** from the 0.6.0 bundle's `CONFIG_SCHEMA`; reproduces the exact `advisorFailureMode` notice the extension emitted (harness matched real output) |
 
 ---
 

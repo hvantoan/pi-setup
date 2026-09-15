@@ -114,7 +114,8 @@ zuey-pi-setup/
 │   └── originals/                   bản gốc CleanShot chưa xử lý (gitignore)
 ├── scripts/
 │   ├── pi-setup-backup.sh           đóng gói setup hiện tại của máy đang chạy
-│   └── pi-setup-restore.sh          dựng lại setup trên máy mới
+│   ├── pi-setup-restore.sh          dựng lại setup trên máy mới
+│   └── pi-setup-verify-advisor.mjs  kiểm tra advisor.json theo schema thật của pi-advisor-flow
 ├── backups/
 │   └── pi-setup-portable.tar.gz     bundle sẵn để tải (đã lọc — xem bên dưới)
 └── config/                          snapshot setup (plain file, diff được bằng git)
@@ -416,7 +417,27 @@ Config của nó nằm **ngoài** config dir của pi, nên `scripts/pi-setup-ba
 
 ## Scripts
 
-Không script nào hỏi xác nhận — chạy được trong script/CI. Rủi ro xử lý bằng snapshot + cảnh báo ra `stderr`.
+Hai script setup **không hỏi xác nhận** — chạy được trong script/CI. Rủi ro xử lý bằng snapshot + cảnh báo ra `stderr`. Script thứ ba chỉ **đọc**.
+
+### `pi-setup-verify-advisor.mjs`
+
+`pi-advisor-flow` không báo lỗi khi gặp key lạ trong `advisor.json`: nó giữ nguyên key đó rồi chỉ notify `contains unrecognized key(s) ... They were preserved but ignored` — và giá trị của key đó **không có hiệu lực**. Một key viết sai tên vì thế trông như đã cấu hình mà thật ra không làm gì.
+
+Script này trích `CONFIG_SCHEMA` từ chính bundle đang cài rồi mô phỏng hai kiểm tra mà extension chạy lúc load: `unknownConfigKeys()` (key lạ → bị ignore) và `validate*Values()` (sai type / ngoài enum).
+
+```bash
+node scripts/pi-setup-verify-advisor.mjs            # file trong repo (config/advisor.json)
+node scripts/pi-setup-verify-advisor.mjs --live     # + file đang chạy ~/.pi/agent/advisor.json, và so 2 file
+node scripts/pi-setup-verify-advisor.mjs --file <path>
+```
+
+| Exit | Nghĩa |
+|---|---|
+| `0` | sạch |
+| `1` | config sai: key lạ, sai type, ngoài enum, JSON hỏng, thiếu file, snapshot lệch bản đang chạy |
+| `2` | lỗi môi trường: không thấy bundle `pi-advisor-flow`, bundle đổi định dạng, tham số sai |
+
+> Vì sao cần: tôi từng viết `advisorFailureMode` (lấy từ tên biến nội bộ trong bundle) trong khi key thật là `gateFailureMode` — file trông đúng, **không** có tác dụng, và mãi sau mới thấy warning. Script này bắt đúng lớp lỗi đó (xem bảng Kiểm chứng).
 
 ### `pi-setup-backup.sh`
 
@@ -499,6 +520,14 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 | Tạo lại bundle trên Windows | ✅ 9 file, 7.9 KB, sạch (không còn `._*` AppleDouble như bản tạo trên macOS) |
 | Đếm package không cần `python3` | ✅ `node -e` → `20` |
 | CRLF trong script | ✅ bash 5.3.15 chịu CRLF (test bằng bản copy CRLF, exit 0) |
+
+### Script verify (`advisor.json`)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Ma trận config (chạy thật, so exit code) | ✅ **6/6**: config sạch `0` · key lạ `1` · ngoài enum `1` · sai type `1` · ref thiếu `provider/model` `1` · thiếu `gateFailureMode` vẫn `0` |
+| Nhánh môi trường | ✅ **7/7**: `--live` so 2 file `0` · `--pkg` không tồn tại `2` · bundle không có `CONFIG_SCHEMA` `2` · `--help` `0` · tham số sai `2` · JSON hỏng `1` · file thiếu `1` |
+| Trích schema | ✅ **31 key** từ `CONFIG_SCHEMA` của bundle 0.6.0; bắt đúng `advisorFailureMode` — key mà extension từng cảnh báo (harness khớp output thật) |
 
 ---
 
