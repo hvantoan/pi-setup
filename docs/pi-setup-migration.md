@@ -40,19 +40,22 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 
 | Mục trong `~/.pi/agent/` | Size | Vào repo? | Lý do |
 |---|---|---|---|
-| `settings.json` | 4 KB | ✅ **bắt buộc** | 16 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
+| `settings.json` | 4 KB | ✅ **bắt buộc** | 17 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
-| `extensions/` | 56 KB | ✅ (lọc) | extension tự viết local. `orca-*.ts` (Orca sinh) và `agentkit-*` (AgentKit sinh) bị loại — xem `.pi-setup-exclude` |
+| `extensions/` | 1.3 MB | ✅ (lọc) | extension tự viết local + config của chúng. `orca-*.ts` (Orca sinh) và `agentkit-*` (AgentKit sinh) bị loại — xem `.pi-setup-exclude` |
+| `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
+| `extensions/provider-fallback.json` | — | ✅ **mặc định** | config của `pi-provider-fallback`, tạo bởi `/fallback-config` |
+| `extensions/*/hooks/` | 544 KB | ⚠️ opt-in | `--hooks` (mặc định đã nằm trong `extensions/` khi không lọc) |
 | `models-store.json` | 28 KB | ✅ | catalog model; có sẵn thì khỏi chờ refresh 4 giờ |
-| `skills/` | — | ⚠️ opt-in | symlink sang AgentKit (`~/.agents/skills`) |
-| `memory/` | — | ⚠️ opt-in | ghi chú cá nhân |
-| `missions/` | 136 KB | ❌ **mặc định loại** | state của `pi-goal-x`; chứa tên project/khách hàng + đường dẫn nội bộ |
+| `skills/` | 24 MB | ⚠️ opt-in | `--skills` — dereference symlink sang AgentKit (`~/.agents/skills`) |
+| `memory/` | — | ⚠️ opt-in | `--memory` |
+| `missions/` | 184 KB | ⚠️ opt-in | `--missions` — state của `pi-goal-x`; chứa tên project/khách hàng + đường dẫn nội bộ |
 | `trust.json` | 4 KB | ❌ | chứa path tuyệt đối của máy cũ → script có `--with-trust` nếu cần |
-| `auth.json` | 4 KB | ❌ | **secret** (API key + OAuth access/refresh token) → `/login` lại |
-| `npm/` | 244 MB | ❌ | pi tự cài lại |
-| `sessions/` | 46 MB | ❌ | history; copy riêng bằng `rsync` nếu muốn `pi --resume` |
+| `auth.json` | 4 KB | ⚠️ opt-in | `--auth` — **secret** (API key + OAuth access/refresh token); mặc định không lấy, `/login` lại trên máy mới |
+| `npm/` | ~250 MB | ❌ | pi tự cài lại |
+| `sessions/` | 57 MB | ⚠️ opt-in | `--sessions` — history chat; restore rồi thì `pi --resume` |
 
-`missions/`/`memory/`/`skills/` **không** nằm trong bản mặc định vì chúng là *state*, không phải *setup*. Muốn backup kèm: `./scripts/pi-setup-backup.sh --with-state`.
+`missions/`/`memory/`/`skills/`/`auth.json`/`sessions/` **không** nằm trong bản mặc định vì chúng là *state* hoặc *secret*, không phải *setup*. Bật từng cái bằng flag tương ứng, hoặc `--with-state` (= `--skills --memory --missions`).
 
 ---
 
@@ -129,26 +132,81 @@ Trong pi: `/login`, hoặc `pi auth login` theo hướng dẫn `/login`. Kiểm 
 
 ---
 
+## Statusline: context bar (0–100%)
+
+Statusline là `pi-footer`, config ở `~/.pi/agent/extensions/pi-footer.json`. Widget **`context-bar`** hiển thị thanh tiến độ context theo **context window của từng model**:
+
+```json
+{ "type": "context-bar", "options": { "contextBarMode": "medium", "contextConditionalColors": true, "hideWhenZero": true } }
+```
+
+Render thật (gọi trực tiếp `render()` của widget, context 200k):
+
+```
+ 25%  [████░░░░░░░░░░░░] 50k/200k (25%)      fg=blue
+ 71%  [███████████░░░░░] 142k/200k (71%)     fg=yellow   ← ≥ contextWarningPercent (70)
+ 92%  [███████████████░] 184k/200k (92%)     fg=red      ← ≥ contextDangerPercent (90)
+```
+
+Context 1M ở 25% → `[████░░░░░░░░░░░░] 250k/1m (25%)` (thang chia theo model, không phải số cố định). Chưa biết context length → `?`.
+
+Đổi kiểu bar: `contextBarMode` ∈ `default` (32 ô) · `medium` (16 ô, đang dùng) · `short` (10 ô) · `short-only` (10 ô, không số). Muốn hiện token thô: đổi type thành `context-length` / `context-remaining` / `context-window`.
+
+Config này **được backup mặc định** (nằm trong `extensions/`); `--no-statusline` để opt-out.
+
+---
+
+## `pi-provider-fallback`
+
+Khi model đang dùng gặp lỗi **transient / quota / model-unavailable**, extension tự chuyển sang model fallback kế tiếp (ưu tiên **cùng provider** trước, rồi provider khác) và **chạy lại prompt bị lỗi**; nếu model mới có context window nhỏ hơn thì kích hoạt compaction trước. Swap giữ cho cả session, model gốc phục hồi khi shutdown hoặc `/reload`.
+
+```bash
+/fallback-config     # TUI chọn fallback model cho từng provider (tự lưu mỗi action)
+/fallback-status     # xem config hiện tại
+```
+
+Config: `~/.pi/agent/extensions/provider-fallback.json` → **backup mặc định** (script báo cáo trong phần *config extension*). File chỉ tồn tại sau lần đầu chạy `/fallback-config`. Nếu đặt `PI_PROVIDER_FALLBACK_CONFIG` trỏ ra ngoài config dir, script sẽ cảnh báo là backup không tự thấy được.
+
+---
+
 ## Hai script
 
 Cả hai **không hỏi xác nhận** — rủi ro được xử lý bằng snapshot + cảnh báo ra `stderr`, để chạy được trong script/CI.
 
 ### `scripts/pi-setup-backup.sh`
 
+Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models-store.json`, `extensions/` (kèm luôn statusline `extensions/pi-footer.json`).
+
 ```bash
-./scripts/pi-setup-backup.sh                      # → ./pi-setup-portable.tar.gz (chỉ setup)
-./scripts/pi-setup-backup.sh --config-dir config   # → ghi plain file vào config/ (để commit)
-./scripts/pi-setup-backup.sh --with-state          # kèm skills/ memory/ missions/
+./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (chỉ setup)
+./scripts/pi-setup-backup.sh --config-dir config    # → ghi plain file vào config/ (để commit)
+./scripts/pi-setup-backup.sh --skills --hooks       # thêm skills + hooks
+./scripts/pi-setup-backup.sh --no-statusline        # KHÔNG lấy config statusline
+./scripts/pi-setup-backup.sh --with-state           # = --skills --memory --missions
 ./scripts/pi-setup-backup.sh -o ~/Desktop/pi.tar.gz
 ./scripts/pi-setup-backup.sh --dry-run
 ```
 
+| Opt-in (mặc định **không** lấy) | Lấy gì | Ghi chú |
+|---|---|---|
+| `--auth` | `auth.json` | ⚠ **credential** — không đưa artifact lên nơi công khai |
+| `--skills` | `skills/` | dereference symlink → tự chứa (~24 MB, 108 skill) |
+| `--hooks` | thư mục `hooks/` trong `~/.pi/agent` | 544 KB; **không** đụng `~/.claude/hooks` (có `.env`); ghi đè `.pi-setup-exclude` cho đường dẫn hooks |
+| `--memory` | `memory/` | |
+| `--missions` | `missions/` | ⚠ có thể chứa tên project/khách hàng |
+| `--sessions` | `sessions/` | ~57 MB |
+
+| Opt-out | Tác dụng |
+|---|---|
+| `--no-statusline` | không lấy `pi-footer.json` / `powerline-footer/theme.json` → máy mới dùng layout mặc định |
+
 Script tự:
 
 - ghi ra file tạm rồi `mv` → không để lại artifact hỏng nếu bị ngắt;
-- **quét secret** (`sk-*`, `ghp_*`, `BEGIN PRIVATE KEY`, `api_key=…`) và cảnh báo;
-- **cảnh báo symlink trỏ ra ngoài** config dir;
-- ở chế độ `--config-dir`, tôn trọng `<DIR>/.pi-setup-exclude` (glob loại trừ) → artifact public không bị thêm lại file nhạy cảm;
+- **quét secret** (`sk-*`, `ghp_*`, `BEGIN PRIVATE KEY`, `api_key=…`) và cảnh báo — bỏ qua placeholder trong tài liệu (`password: "securePassword123"`, `{CLIENT_SECRET}`) để cảnh báo còn lại mới đáng đọc;
+- **cảnh báo symlink trỏ ra ngoài** config dir (gợi ý dùng `--skills`);
+- **báo cáo config extension** trong phần tóm tắt: statusline (`pi-footer.json`) và provider-fallback (`provider-fallback.json`) có được backup hay không;
+- ở chế độ `--config-dir`, tôn trọng `<DIR>/.pi-setup-exclude` (glob loại trừ), dọn cả thư mục rỗng còn sót → artifact public không bị thêm lại file nhạy cảm;
 - nén **deterministic** (`gzip -n`) → cùng nội dung cho cùng SHA-256, kiểm tra được giữa 2 máy;
 - từ chối ghi `--config-dir` vào `$HOME`, `/`, hoặc chính thư mục config của pi.
 
@@ -160,12 +218,14 @@ Script tự:
 | `--bundle FILE` | restore từ `.tar.gz` |
 | `--target DIR` | đích khác `~/.pi/agent` |
 | `--scratch` | đích là thư mục tạm — **an toàn để thử** |
-| `--install` | chạy pi headless 1 lần để tự cài extension (~150 s) |
+| `--install` | chạy pi headless 1 lần để tự cài extension (~150–190 s) |
 | `--verify` | so số extension đã cài với `settings.json` |
 | `--with-trust` | copy cả `trust.json` |
 | `--dry-run` | chỉ in ra, không ghi |
 
 Nếu không chỉ định nguồn, script tự dùng `<repo>/pi-setup-portable.tar.gz`, rồi tới `<repo>/config`.
+
+Trước khi ghi đè, `settings.json` **và** `auth.json` (nếu nguồn có file) được snapshot thành `*.bak.<timestamp>` — auth là credential nên ghi đè mà không sao lưu là không thể khôi phục.
 
 Script đặt `trap ERR` nên **không bao giờ thoát im lặng** — gặp lỗi ngoài dự kiến sẽ in `✗ lỗi không mong đợi tại pi-setup-restore.sh dòng <N>`.
 
@@ -175,7 +235,7 @@ Script đặt `trap ERR` nên **không bao giờ thoát im lặng** — gặp l�
 
 Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_CODING_AGENT_DIR`, không đụng setup thật.
 
-### Đường tarball (bundle 37 KB, có cả state)
+### Đường tarball (bundle đầy đủ — đo với snapshot 16 package, trước khi thêm `pi-provider-fallback`)
 
 | Kiểm tra | Kết quả |
 |---|---|
@@ -186,7 +246,18 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | `auth.json` trong dir mới | `{}` → **không rò secret** |
 | Chạy lần 2 | log rỗng (0 byte) → **idempotent** |
 
-### Đường `--from-config config` (payload của repo, chỉ setup)
+### Đường `--from-config config` (payload của repo — 17 package)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Restore vào dir mới | ✅ `settings.json APPEND_SYSTEM.md models-store.json extensions` |
+| Cài 17 extension | ✅ **136 s**, module dirs `0 → 183` |
+| `--verify` | ✅ **`17/17 extension khớp`** |
+| Extension có **chạy** không (không chỉ cài) | ✅ khởi động pi trong dir vừa restore: **11 `extension_ui_request`**, 0 lỗi |
+| `pi list` trong bản restore | ✅ 17 package |
+| Config thật có bị đụng không | ✅ không (không sinh `settings.json.bak` mới) |
+
+### Cùng đường đó, đo lần đầu (khi còn 16 package)
 
 | Kiểm tra | Kết quả |
 |---|---|
@@ -218,6 +289,9 @@ cd /tmp/verify-clone
 |---|---|
 | Backup mặc định không chứa `missions/`, `memory/`, `skills/` | ✅ chỉ 4 mục setup |
 | Backup 2 lần → `cmp` | ✅ **byte-identical** (deterministic) |
+| Quét secret: `sk-proj-…` thật (test) | ✅ báo đúng file |
+| Quét secret: PEM key có thân base64 | ✅ báo |
+| Quét secret: PEM header trần · `{CLIENT_SECRET}` · `password: "currentPassword"` · fixture `ghp_aaaa…` | ✅ **im** (nhận là placeholder) |
 | `--config-dir $HOME` | ✅ từ chối, exit 1 |
 | Không tìm thấy nguồn | ✅ báo rõ đã thử đường dẫn nào, exit 1 |
 | Bundle hỏng | ✅ ERR trap chỉ đúng số dòng |
@@ -276,4 +350,5 @@ loại trừ: 82 file khớp .pi-setup-exclude (extensions/orca-*.ts extensions/
 - [ ] `/login` cho `opencode-go`, `deepseek`, `openai-codex`
 - [ ] `pi auth check --provider opencode-go` → OK
 - [ ] Thử 1 extension, ví dụ `/btw <câu hỏi>` (cần TUI mode)
-- [ ] Cài AgentKit nếu cần 2 skill symlink
+- [ ] Chạy `/fallback-config` để cấu hình fallback model (sau đó backup tự kèm `provider-fallback.json`)
+- [ ] Cài AgentKit nếu cần skill symlink
