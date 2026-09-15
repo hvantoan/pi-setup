@@ -6,5 +6,8 @@
   "showUsageFooter": true,
   "advisorRedactSecrets": true,
   "advisorTrackedFileContent": true,
-  "advisorUntrackedContent": true
+  "advisorUntrackedContent": true,
+  "gateFailureMode": "warn-and-continue",
+  "advisor": "deepseek/deepseek-v4-flash",
+  "executor": "opencode-go/deepseek-v4.1-flash"
 }
