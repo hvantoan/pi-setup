@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "enabled": true,
+  "preset": "default",
+  "lines": [
+    [
+      {
+        "type": "cwd",
+        "options": {
+          "segments": 3
+        }
+      },
+      {
+        "type": "model-provider"
+      },
+      {
+        "type": "thinking-level"
+      }
+    ],
+    [
+      {
+        "type": "context-length",
+        "options": {
+          "hideWhenZero": true
+        }
+      },
+      {
+        "type": "cache-hit-rate",
+        "options": {
+          "cacheHitSource": "session",
+          "hideWhenZero": true
+        }
+      },
+      {
+        "type": "event",
+        "options": {
+          "widgetId": "cache_ttl",
+          "icon": "󰆼 "
+        }
+      },
+      {
+        "type": "event",
+        "options": {
+          "widgetId": "tps",
+          "icon": " "
+        }
+      }
+    ],
+    [
+      {
+        "type": "git-branch",
+        "options": {
+          "hideWhenEmpty": true
+        }
+      },
+      {
+        "type": "git-diff",
+        "options": {
+          "gitDiffMode": "compact"
+        }
+      },
+      {
+        "type": "cost"
+      },
+      {
+        "type": "total-time"
+      }
+    ]
+  ],
+  "separator": "dot",
+  "separatorFg": "default",
+  "separatorBg": "default",
+  "iconMode": "nerd",
+  "minimalist": false,
+  "terminal": {
+    "widthMode": "full"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "lastChangelogVersion": "0.85.1",
+  "theme": "light/dark",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "deepseek-v4.1-flash",
+  "defaultThinkingLevel": "high",
+  "defaultProjectTrust": "always",
+  "tuiMode": "regular",
+  "packages": [
+    "npm:pi-web-access",
+    "npm:pi-mcp-adapter",
+    "npm:pi-subagents",
+    "npm:@juicesharp/rpiv-todo",
+    "npm:@juicesharp/rpiv-ask-user-question",
+    "npm:pi-goal-x",
+    "npm:pi-background-tasks",
+    "npm:@narumitw/pi-usage",
+    "npm:pi-simplify",
+    {
+      "source": "npm:pi-powerline-footer",
+      "extensions": []
+    },
+    "npm:pi-memory",
+    "npm:pi-worktree",
+    "npm:pi-chime",
+    "npm:pi-footer",
+    "npm:pi-smart-fetch@0.3.17",
+    "npm:@juicesharp/rpiv-btw"
+  ],
+  "enabledModels": [
+    "opencode-go/deepseek-v4.1-flash",
+    "opencode-go/kimi-k2.7-code",
+    "opencode-go/minimax-m3",
+    "opencode-go/glm-5.3",
+    "openai-codex/gpt-5.6-sol",
+    "deepseek/deepseek-v4-pro"
+  ],
+  "showCacheMissNotices": true,
+  "thinkingBudgets": {
+    "medium": 10240,
+    "high": 32768
+  },
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000
+  },
+  "retry": {
+    "enabled": true,
+    "maxRetries": 3
+  },
+  "markdown": {
+    "mermaid": "streaming"
+  }
+}

@@ -1,0 +1,13 @@
+# File/đường dẫn KHÔNG đưa vào repo public này.
+# Mỗi dòng 1 glob, tính từ gốc thư mục config/. Dấu # bắt đầu comment.
+# được scripts/pi-setup-backup.sh --config-dir tôn trọng khi mirror.
+
+# 3 extension do Orca sinh (@orca-managed-pi-extension).
+# Orca tự sinh lại khi quản lý pi trên máy mới, nên không mất chức năng.
+extensions/orca-*.ts
+
+# 2 thư mục do AgentKit (ak CLI) tự cài vào ~/.pi/agent/extensions/.
+# Chứa cache path tuyệt đối (native-skill-paths.json 157 KB,
+# native-skill-hashes.json 280 KB) + 1.2 MB hook đã sinh sẵn.
+# AgentKit tự cài lại trên máy mới bằng `ak`, nên không thuộc repo này.
+extensions/agentkit-*
