@@ -16,7 +16,7 @@ cd zuey-pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
 ```
 
-Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 19 extensions.
+Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 20 extensions.
 
 **Không cần** copy thư mục `npm/` (244 MB cache) hay `auth.json` (secret).
 
@@ -40,13 +40,16 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 
 | Mục trong `~/.pi/agent/` | Size | Vào repo? | Lý do |
 |---|---|---|---|
-| `settings.json` | 4 KB | ✅ **bắt buộc** | 19 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
+| `settings.json` | 4 KB | ✅ **bắt buộc** | 20 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
 | `extensions/` | 1.3 MB | ✅ (lọc) | extension tự viết local + config của chúng. `orca-*.ts` (Orca sinh) và `agentkit-*` (AgentKit sinh) bị loại — xem `.pi-setup-exclude` |
 | `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
 | `extensions/provider-fallback.json` | — | ✅ **mặc định** | config của `pi-provider-fallback`, tạo bởi `/fallback-config` |
 | `extensions/*/hooks/` | 544 KB | ⚠️ opt-in | `--hooks` (mặc định đã nằm trong `extensions/` khi không lọc) |
 | `models-store.json` | 28 KB | ✅ | catalog model; có sẵn thì khỏi chờ refresh 4 giờ |
+| `99extensions.json` | — | ✅ **mặc định** | config họ 99percentpeople (`@99percentpeople/pi-todo`), ở gốc config dir; chỉ có sau khi dùng `/99settings` |
+| `~/.unipi/config/notify/config.json` | — | ❌ **credential** | config `@pi-unipi/notify`: chứa token Gotify + botToken/chatId Telegram → **cố ý** không đưa vào; máy mới chạy lại `/unipi:notify-set-gotify` + `/unipi:notify-set-tg` |
+| `~/.pi-lens/config.json` | 136 B | ✅ **mặc định** | config `pi-lens`, nằm **NGOÀI** config dir → lấy qua `EXTERNAL_CONFIGS`, vào artifact thành `pi-lens.json` + manifest `external-configs.txt` |
 | `advisor.json` | — | ✅ **mặc định** | config `pi-advisor-flow`, ở **gốc** config dir (không trong `extensions/`) nên liệt kê riêng; chỉ có sau `/advisor` hoặc `/advisor-settings` |
 | `advisor-outcomes.jsonl`, `advisor-outcomes-salt` | — | ❌ | log outcome + salt theo máy của `pi-advisor-flow` → nằm trong `.pi-setup-exclude` |
 | `skills/` | 24 MB | ⚠️ opt-in | `--skills` — dereference symlink sang AgentKit (`~/.agents/skills`) |
@@ -117,7 +120,7 @@ Script sẽ:
 
 1. Snapshot `settings.json` hiện có thành `settings.json.bak.<YYYYmmdd-HHMMSS>` (nếu đã tồn tại),
 2. Copy 4 mục setup vào `~/.pi/agent`,
-3. Chạy pi headless 1 lần → pi tự cài 19 extension (~150–220 s),
+3. Chạy pi headless 1 lần → pi tự cài 20 extension (~150–220 s),
 4. Verify số extension khớp với `settings.json`.
 
 ## Bước 3 — login lại provider
@@ -254,7 +257,18 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | `auth.json` trong dir mới | `{}` → **không rò secret** |
 | Chạy lần 2 | log rỗng (0 byte) → **idempotent** |
 
-### Đường `--from-config config` (payload hiện tại — 19 package)
+### Đường `--from-config config` (payload hiện tại — 20 package)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Restore vào dir mới | ✅ `settings.json APPEND_SYSTEM.md models-store.json advisor.json extensions` + config ngoài `~/.pi-lens/config.json` |
+| Cài 20 extension | ✅ **246 s**, module dirs `0 → 203` |
+| `--verify` | ✅ **`20/20 extension khớp`** |
+| Extension có **chạy** không | ✅ 18 `extension_ui_request`, 0 lỗi load, thấy `pi-lens-lsp` |
+| `pi list` trong bản restore | ✅ 20 package |
+| Snapshot bản config ngoài cũ | ✅ tự tạo `config.json.bak.<timestamp>` trước khi ghi đè |
+
+### Snapshot 19 package
 
 | Kiểm tra | Kết quả |
 |---|---|
@@ -364,6 +378,12 @@ Extension này công bố thêm 2 status key `advisor-scout` + `advisor-usage`; 
 **`@tmustier/pi-session-recap` không có config/state.** Không đọc-ghi file nào trong `~/.pi/agent/` nên không cần thêm mục nào vào backup. Nó công bố 1 status key `session-recap` (chỉ khi đang soạn recap) — đã nằm trong `hiddenKeys` + có widget inline, nên statusline giữ 3 hàng.
 
 > tmux: cần `set -g focus-events on` trong `~/.tmux.conf` rồi `tmux source-file ~/.tmux.conf` thì extension mới biết bạn đã quay lại.
+
+**`pi-lens` (LSP).** `pi` không có LSP built-in nên đây là extension. Config ở `~/.pi-lens/config.json` — **ngoài** config dir — với `widget.visible: false` (tắt đúng widget hiện danh sách file từng gây khó chịu), `format.enabled: false` và `autofix.enabled: false` (chỉ xin LSP, không xin tự sửa/format code; mặc định package là `true`).
+
+Nó công bố status key `pi-lens-lsp` (`LSP Active: ts` / `LSP Inactive`) → đã vào `hiddenKeys` + có widget inline, nên vẫn thấy được LSP chạy hay không mà statusline giữ 3 hàng.
+
+Config ngoài config dir được mang theo bằng `EXTERNAL_CONFIGS` + manifest `external-configs.txt` (dùng dạng `~`, không lộ path máy); restore tự `mkdir -p` và snapshot bản cũ.
 
 ### `.pi-setup-exclude`
 

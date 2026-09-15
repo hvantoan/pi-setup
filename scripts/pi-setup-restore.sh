@@ -27,9 +27,13 @@ WITH_TRUST=0
 DRY_RUN=0
 SCRATCH=0
 
+# Manifest đi kèm artifact liệt kê config extension nằm NGOÀI config dir của pi
+# (do pi-setup-backup.sh ghi). Mỗi dòng: <tên file trong artifact>=<đường dẫn dạng ~>
+EXTERNAL_MANIFEST="external-configs.txt"
+
 # Nội dung được phép restore. Có gì trong nguồn thì copy cái đó.
 # 'hooks' không cần liệt kê riêng: chúng nằm trong cây extensions/.
-ITEMS=(settings.json APPEND_SYSTEM.md models-store.json advisor.json extensions skills memory missions sessions auth.json)
+ITEMS=(settings.json APPEND_SYSTEM.md models-store.json advisor.json 99extensions.json extensions skills memory missions sessions auth.json)
 
 info() { printf '%s\n' "$*"; }
 warn() { printf '⚠  %s\n' "$*" >&2; }
@@ -164,6 +168,29 @@ if [ "$WITH_TRUST" -eq 1 ]; then
 	fi
 else
 	warn "bỏ qua trust.json (dùng --with-trust nếu path trên máy mới giống máy cũ)"
+fi
+
+# --- Config extension nằm ngoài config dir (theo manifest trong nguồn) ---
+if [ -f "$SRC/$EXTERNAL_MANIFEST" ]; then
+	while IFS='=' read -r ext_name ext_dest; do
+		[ -n "$ext_name" ] || continue
+		if [ ! -f "$SRC/$ext_name" ]; then
+			warn "$ext_name có trong $EXTERNAL_MANIFEST nhưng thiếu trong nguồn — bỏ qua"
+			continue
+		fi
+		ext_target="${ext_dest/#\~/$HOME}"
+		if [ "$DRY_RUN" -eq 1 ]; then
+			info "  [dry-run] (ngoài config dir) $ext_name → $ext_target"
+			continue
+		fi
+		mkdir -p "$(dirname "$ext_target")"
+		if [ -f "$ext_target" ] && [ "$DRY_RUN" -eq 0 ]; then
+			cp -p "$ext_target" "$ext_target.bak.$(date +%Y%m%d-%H%M%S)"
+			warn "đã snapshot $ext_target cũ"
+		fi
+		cp -p "$SRC/$ext_name" "$ext_target"
+		RESTORED+=("$ext_target")
+	done <"$SRC/$EXTERNAL_MANIFEST"
 fi
 
 [ "$DRY_RUN" -eq 1 ] && {

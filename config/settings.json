@@ -10,7 +10,6 @@
     "npm:pi-web-access",
     "npm:pi-mcp-adapter",
     "npm:pi-subagents",
-    "npm:@juicesharp/rpiv-todo",
     "npm:@juicesharp/rpiv-ask-user-question",
     "npm:pi-goal-x",
     "npm:pi-background-tasks",
@@ -22,13 +21,15 @@
     },
     "npm:pi-memory",
     "npm:pi-worktree",
-    "npm:pi-chime",
     "npm:pi-footer",
     "npm:pi-smart-fetch@0.3.17",
     "npm:@juicesharp/rpiv-btw",
     "npm:pi-provider-fallback",
     "npm:pi-advisor-flow",
-    "npm:@tmustier/pi-session-recap"
+    "npm:@tmustier/pi-session-recap",
+    "npm:pi-lens",
+    "npm:@99percentpeople/pi-todo",
+    "npm:@pi-unipi/notify"
   ],
   "enabledModels": [
     "opencode-go/deepseek-v4.1-flash",

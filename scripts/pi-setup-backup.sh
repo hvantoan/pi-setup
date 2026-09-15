@@ -36,11 +36,14 @@ AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 # Setup: đủ để dựng lại y hệt bộ extension.
 # advisor.json nằm ở GỐC config dir (không phải trong extensions/), do pi-advisor-flow
 # dùng làm config toàn cục → phải liệt kê riêng, nếu không sẽ không được backup.
-ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models-store.json advisor.json extensions)
+# advisor.json và 99extensions.json nằm ở GỐC config dir (không trong extensions/)
+# → phải liệt kê riêng, nếu không sẽ không được backup.
+ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models-store.json advisor.json 99extensions.json extensions)
 
 OUT="$ROOT/pi-setup-portable.tar.gz"
 CONFIG_DIR=""
 EXCLUDE_FILE=""
+CLEANUP_DIRS=()
 QUIET=0
 DRY_RUN=0
 
@@ -66,11 +69,42 @@ CONFIG_CANDIDATES=(
 	"extensions/powerline-footer/theme.json|statusline (pi-powerline-footer)|yes"
 	"extensions/provider-fallback.json|fallback (pi-provider-fallback)|no"
 	"advisor.json|advisor flow (pi-advisor-flow)|no"
+	"99extensions.json|todo (pi-todo)|no"
 )
 
 CONFIG_FOUND=()
 STATUSLINE_FOUND=()
 SKIP=()
+# Config của vài extension nằm NGOÀI config dir của pi, nên không thể lấy theo
+# đường dẫn tương đối. Định dạng: <đường dẫn>:<tên file trong artifact>.
+# Ghi bằng ~ (không dùng /Users/...) để artifact không lộ path của máy.
+# ⚠ KHÔNG thêm ~/.unipi/config/notify/config.json vào danh sách này: file đó chứa
+# token Gotify và botToken/chatId Telegram → đưa vào artifact là lộ credential lên
+# repo public. Config đó phải thiết lập lại trên máy mới bằng
+# /unipi:notify-set-gotify và /unipi:notify-set-tg.
+EXTERNAL_CONFIGS=(
+	"~/.pi-lens/config.json:pi-lens.json"
+)
+# Tên file manifest đi kèm artifact, cho restore biết file ngoài nào cần đặt ở đâu.
+EXTERNAL_MANIFEST="external-configs.txt"
+
+ext_collect() {
+	EXT_SRC=()
+	EXT_NAME=()
+	EXT_TILDE=()
+	local entry src name expanded
+	for entry in "${EXTERNAL_CONFIGS[@]}"; do
+		src="${entry%%:*}"
+		name="${entry##*:}"
+		expanded="${src/#\~/$HOME}"
+		if [ -f "$expanded" ]; then
+			EXT_SRC+=("$expanded")
+			EXT_NAME+=("$name")
+			EXT_TILDE+=("$src")
+		fi
+	done
+}
+
 # Pattern loại trừ (từ --exclude-file và/hoặc <config-dir>/.pi-setup-exclude).
 # Khai báo Ở ĐÂY, không khai báo lại ở chỗ prune_excluded (sẽ reset mất giá trị).
 EXCLUDES=()
@@ -437,6 +471,23 @@ if [ -n "$CONFIG_DIR" ]; then
 		fi
 	done
 
+	# config nằm ngoài config dir: copy vào mirror + ghi manifest
+	ext_collect
+	for i in "${!EXT_NAME[@]}"; do
+		cp -p "${EXT_SRC[$i]}" "$CONFIG_DIR/${EXT_NAME[$i]}"
+	done
+	if [ "${#EXT_NAME[@]}" -gt 0 ]; then
+		: >"$CONFIG_DIR/$EXTERNAL_MANIFEST"
+		for i in "${!EXT_NAME[@]}"; do
+			printf '%s=%s\n' "${EXT_NAME[$i]}" "${EXT_TILDE[$i]}" >>"$CONFIG_DIR/$EXTERNAL_MANIFEST"
+		done
+		# mtime cố định: manifest sinh mới mỗi lần nên nếu để mtime hiện tại thì
+		# bundle sẽ khác nhau giữa 2 lần chạy (tar lưu mtime).
+		touch -t 200001010000 "$CONFIG_DIR/$EXTERNAL_MANIFEST"
+	elif [ -f "$CONFIG_DIR/$EXTERNAL_MANIFEST" ]; then
+		rm -f "$CONFIG_DIR/$EXTERNAL_MANIFEST"
+	fi
+
 	load_excludes
 	EXCLUDED="$(prune_excluded)"
 
@@ -456,7 +507,7 @@ if [ -n "$CONFIG_DIR" ]; then
 	while IFS= read -r entry; do
 		name="$(basename "$entry")"
 		[ -z "$name" ] && continue
-		case "$name" in .*) continue ;; esac
+		case "$name" in .* | "$EXTERNAL_MANIFEST") continue ;; esac
 		found=0
 		for item in "${INCLUDE[@]}"; do
 			[ "$name" = "$(basename "$item")" ] && found=1
@@ -482,6 +533,9 @@ if [ -n "$CONFIG_DIR" ]; then
 	for c in "${CONFIG_FOUND[@]}"; do
 		info "    $c"
 	done
+	for i in "${!EXT_NAME[@]}"; do
+		info "    ngoài config dir: ${EXT_TILDE[$i]} → ${EXT_NAME[$i]}"
+	done
 	exit 0
 fi
 
@@ -495,6 +549,9 @@ cleanup() {
 	trap - ERR
 	rm -f "$TMP"
 	rm -rf "$SCAN_DIR"
+	for d in "${CLEANUP_DIRS[@]:-}"; do
+		[ -n "$d" ] && rm -rf "$d"
+	done
 	return 0
 }
 trap cleanup EXIT
@@ -503,6 +560,24 @@ trap cleanup EXIT
 # 'gzip -n' bỏ timestamp → cùng nội dung thì cùng sha256 (kiểm tra được giữa 2 máy).
 TAR_OPTS=(-cf -)
 [ "$DEREF" -eq 1 ] && TAR_OPTS=(-hcf -) # -h: dereference symlink (dùng với --skills)
+
+# Config ngoài config dir: stage vào 1 thư mục tạm (dùng -p để giữ mtime → bundle vẫn
+# tất định), kèm manifest cho restore biết đích.
+ext_collect
+EXT_STAGE="$(mktemp -d)"
+CLEANUP_DIRS+=("$EXT_STAGE")
+TAR_EXTRA=()
+if [ "${#EXT_NAME[@]}" -gt 0 ]; then
+	for i in "${!EXT_NAME[@]}"; do
+		cp -p "${EXT_SRC[$i]}" "$EXT_STAGE/${EXT_NAME[$i]}"
+	done
+	: >"$EXT_STAGE/$EXTERNAL_MANIFEST"
+	for i in "${!EXT_NAME[@]}"; do
+		printf '%s=%s\n' "${EXT_NAME[$i]}" "${EXT_TILDE[$i]}" >>"$EXT_STAGE/$EXTERNAL_MANIFEST"
+	done
+	touch -t 200001010000 "$EXT_STAGE/$EXTERNAL_MANIFEST" # giữ bundle tất định
+	TAR_EXTRA=(-C "$EXT_STAGE" "${EXT_NAME[@]}" "$EXTERNAL_MANIFEST")
+fi
 EXCLUDE_OPTS=()
 for p in "${SKIP[@]:-}"; do
 	[ -n "$p" ] || continue
@@ -528,9 +603,9 @@ done
 
 # Lưu ý: không dùng "${EXCLUDE_OPTS[@]:-}" — array rỗng sẽ thành 1 phần tử '' và tar báo lỗi.
 if [ "${#EXCLUDE_OPTS[@]}" -gt 0 ]; then
-	tar "${TAR_OPTS[@]}" "${EXCLUDE_OPTS[@]}" -C "$AGENT_DIR" "${INCLUDE[@]}" | gzip -n >"$TMP"
+	tar "${TAR_OPTS[@]}" "${EXCLUDE_OPTS[@]}" -C "$AGENT_DIR" "${INCLUDE[@]}" "${TAR_EXTRA[@]}" | gzip -n >"$TMP"
 else
-	tar "${TAR_OPTS[@]}" -C "$AGENT_DIR" "${INCLUDE[@]}" | gzip -n >"$TMP"
+	tar "${TAR_OPTS[@]}" -C "$AGENT_DIR" "${INCLUDE[@]}" "${TAR_EXTRA[@]}" | gzip -n >"$TMP"
 fi
 tar -xzf "$TMP" -C "$SCAN_DIR"
 scan_secrets "$SCAN_DIR" || true
@@ -569,6 +644,9 @@ else
 	if [ "$FLAG_NO_STATUSLINE" -eq 1 ]; then
 		emit "  statusline: BỬ QUA (--no-statusline)${STATUSLINE_FOUND:+ — đã bỏ ${STATUSLINE_FOUND[*]}}"
 	fi
+	for i in "${!EXT_NAME[@]}"; do
+		emit "    ngoài config dir: ${EXT_TILDE[$i]} → ${EXT_NAME[$i]}"
+	done
 	emit "  config extension:"
 	for c in "${CONFIG_FOUND[@]}"; do
 		emit "    $c"
