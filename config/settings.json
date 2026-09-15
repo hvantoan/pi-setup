@@ -1,8 +1,8 @@
 {
   "lastChangelogVersion": "0.85.1",
   "theme": "light/dark",
-  "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4.1-flash",
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-flash",
   "defaultThinkingLevel": "high",
   "defaultProjectTrust": "always",
   "tuiMode": "regular",
@@ -32,6 +32,7 @@
     "npm:@pi-unipi/notify"
   ],
   "enabledModels": [
+    "deepseek/deepseek-v4-flash",
     "opencode-go/deepseek-v4.1-flash",
     "opencode-go/kimi-k2.7-code",
     "opencode-go/minimax-m3",
