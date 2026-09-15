@@ -76,6 +76,18 @@
       {
         "type": "external-status",
         "options": {
+          "externalStatusKey": "mcp-auth"
+        }
+      },
+      {
+        "type": "external-status",
+        "options": {
+          "externalStatusKey": "worktree"
+        }
+      },
+      {
+        "type": "external-status",
+        "options": {
           "externalStatusKey": "background-tasks"
         }
       },
@@ -88,7 +100,25 @@
       {
         "type": "external-status",
         "options": {
+          "externalStatusKey": "subagent-slash"
+        }
+      },
+      {
+        "type": "external-status",
+        "options": {
+          "externalStatusKey": "subagent-slash-text"
+        }
+      },
+      {
+        "type": "external-status",
+        "options": {
           "externalStatusKey": "usage"
+        }
+      },
+      {
+        "type": "external-status",
+        "options": {
+          "externalStatusKey": "stash"
         }
       }
     ]
@@ -106,13 +136,23 @@
       "background-tasks",
       "goal",
       "mcp",
-      "usage"
+      "mcp-auth",
+      "stash",
+      "subagent-slash",
+      "subagent-slash-text",
+      "usage",
+      "worktree"
     ],
     "knownKeys": [
       "background-tasks",
       "goal",
       "mcp",
-      "usage"
+      "mcp-auth",
+      "stash",
+      "subagent-slash",
+      "subagent-slash-text",
+      "usage",
+      "worktree"
     ]
   }
 }
