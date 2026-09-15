@@ -191,7 +191,7 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | Kiểm tra | Kết quả |
 |---|---|
 | Restore vào dir mới | ✅ `settings.json APPEND_SYSTEM.md models-store.json extensions` |
-| Cài extension | ✅ **138 s**, module dirs `0 → 182` |
+| Cài extension | ✅ **138 s** và **192 s** ở 2 lần chạy khác nhau (tuỳ tốc độ npm), module dirs `0 → 182` |
 | `--verify` | ✅ **`16/16 extension khớp`** |
 | Extension có **chạy** không (không chỉ cài) | ✅ khởi động pi trong dir vừa restore: **11 `extension_ui_request`**, 0 lỗi, thấy đủ surface `subagent-async`, `mcp`, `goal`, `background-tasks`, `usage`, `pi-footer` |
 | `pi list` trong bản restore | ✅ 16 package |

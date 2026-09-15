@@ -163,7 +163,7 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 
 | Kiểm tra | Kết quả |
 |---|---|
-| Thời gian cài lần đầu (16 extensions) | **138–156 s** |
+| Thời gian cài lần đầu (16 extensions) | **138–192 s** (tuỳ tốc độ npm) |
 | Module dirs trong `npm/node_modules` | **0 → 182** |
 | `--verify` | **16/16 extension khớp** |
 | Extension **thực sự chạy** (không chỉ cài) | ✅ 11 `extension_ui_request`, 0 lỗi, đủ surface: `subagent-async`, `mcp`, `goal`, `background-tasks`, `usage`, `pi-footer` |
