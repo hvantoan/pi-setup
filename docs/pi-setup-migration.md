@@ -197,6 +197,21 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | `pi list` trong bản restore | ✅ 16 package |
 | Config thật có bị đụng không | ✅ không (không sinh `settings.json.bak` mới) |
 
+### Clone từ repo public (kiểm chứng cuối)
+
+```bash
+git clone https://github.com/mrgoonie/zuey-pi-setup.git /tmp/verify-clone
+cd /tmp/verify-clone
+./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify
+```
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Clone chứa đúng payload public | ✅ 11 file; **0** file `orca-*`, `agentkit-*`, `native-skill-*` |
+| Thời gian cài | ✅ **153 s**, module dirs `0 → 182` |
+| `--verify` | ✅ **`16/16 extension khớp`** (exit 0) |
+| Bản restore có chạy thật | ✅ 11 `extension_ui_request`, **0 lỗi** |
+
 ### Các test khác
 
 | Test | Kết quả |
