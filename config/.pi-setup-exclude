@@ -11,3 +11,7 @@ extensions/orca-*.ts
 # native-skill-hashes.json 280 KB) + 1.2 MB hook đã sinh sẵn.
 # AgentKit tự cài lại trên máy mới bằng `ak`, nên không thuộc repo này.
 extensions/agentkit-*
+
+# State của pi-advisor-flow (salt + log outcome) — không phải setup, không public
+advisor-outcomes.jsonl
+advisor-outcomes-salt

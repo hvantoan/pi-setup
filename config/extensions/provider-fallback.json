@@ -1,0 +1,25 @@
+{
+  "enabled": false,
+  "providers": {
+    "anthropic": {
+      "enabled": false,
+      "fallbacks": []
+    },
+    "deepseek": {
+      "enabled": false,
+      "fallbacks": []
+    },
+    "google": {
+      "enabled": false,
+      "fallbacks": []
+    },
+    "openai": {
+      "enabled": false,
+      "fallbacks": []
+    },
+    "openai-codex": {
+      "enabled": false,
+      "fallbacks": []
+    }
+  }
+}

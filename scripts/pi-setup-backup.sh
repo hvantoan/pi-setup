@@ -34,7 +34,9 @@ fi
 AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 
 # Setup: đủ để dựng lại y hệt bộ extension.
-ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models-store.json extensions)
+# advisor.json nằm ở GỐC config dir (không phải trong extensions/), do pi-advisor-flow
+# dùng làm config toàn cục → phải liệt kê riêng, nếu không sẽ không được backup.
+ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models-store.json advisor.json extensions)
 
 OUT="$ROOT/pi-setup-portable.tar.gz"
 CONFIG_DIR=""
@@ -63,6 +65,7 @@ CONFIG_CANDIDATES=(
 	"extensions/pi-footer.json|statusline (pi-footer)|yes"
 	"extensions/powerline-footer/theme.json|statusline (pi-powerline-footer)|yes"
 	"extensions/provider-fallback.json|fallback (pi-provider-fallback)|no"
+	"advisor.json|advisor flow (pi-advisor-flow)|no"
 )
 
 CONFIG_FOUND=()

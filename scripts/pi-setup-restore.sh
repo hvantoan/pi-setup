@@ -29,7 +29,7 @@ SCRATCH=0
 
 # Nội dung được phép restore. Có gì trong nguồn thì copy cái đó.
 # 'hooks' không cần liệt kê riêng: chúng nằm trong cây extensions/.
-ITEMS=(settings.json APPEND_SYSTEM.md models-store.json extensions skills memory missions sessions auth.json)
+ITEMS=(settings.json APPEND_SYSTEM.md models-store.json advisor.json extensions skills memory missions sessions auth.json)
 
 info() { printf '%s\n' "$*"; }
 warn() { printf '⚠  %s\n' "$*" >&2; }

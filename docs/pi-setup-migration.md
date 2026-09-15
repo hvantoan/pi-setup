@@ -16,7 +16,7 @@ cd zuey-pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
 ```
 
-Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 16 extensions.
+Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 18 extensions.
 
 **Không cần** copy thư mục `npm/` (244 MB cache) hay `auth.json` (secret).
 
@@ -40,13 +40,15 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 
 | Mục trong `~/.pi/agent/` | Size | Vào repo? | Lý do |
 |---|---|---|---|
-| `settings.json` | 4 KB | ✅ **bắt buộc** | 17 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
+| `settings.json` | 4 KB | ✅ **bắt buộc** | 18 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
 | `extensions/` | 1.3 MB | ✅ (lọc) | extension tự viết local + config của chúng. `orca-*.ts` (Orca sinh) và `agentkit-*` (AgentKit sinh) bị loại — xem `.pi-setup-exclude` |
 | `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
 | `extensions/provider-fallback.json` | — | ✅ **mặc định** | config của `pi-provider-fallback`, tạo bởi `/fallback-config` |
 | `extensions/*/hooks/` | 544 KB | ⚠️ opt-in | `--hooks` (mặc định đã nằm trong `extensions/` khi không lọc) |
 | `models-store.json` | 28 KB | ✅ | catalog model; có sẵn thì khỏi chờ refresh 4 giờ |
+| `advisor.json` | — | ✅ **mặc định** | config `pi-advisor-flow`, ở **gốc** config dir (không trong `extensions/`) nên liệt kê riêng; chỉ có sau `/advisor` hoặc `/advisor-settings` |
+| `advisor-outcomes.jsonl`, `advisor-outcomes-salt` | — | ❌ | log outcome + salt theo máy của `pi-advisor-flow` → nằm trong `.pi-setup-exclude` |
 | `skills/` | 24 MB | ⚠️ opt-in | `--skills` — dereference symlink sang AgentKit (`~/.agents/skills`) |
 | `memory/` | — | ⚠️ opt-in | `--memory` |
 | `missions/` | 184 KB | ⚠️ opt-in | `--missions` — state của `pi-goal-x`; chứa tên project/khách hàng + đường dẫn nội bộ |
@@ -115,7 +117,7 @@ Script sẽ:
 
 1. Snapshot `settings.json` hiện có thành `settings.json.bak.<YYYYmmdd-HHMMSS>` (nếu đã tồn tại),
 2. Copy 4 mục setup vào `~/.pi/agent`,
-3. Chạy pi headless 1 lần → pi tự cài 16 extension (~150 s),
+3. Chạy pi headless 1 lần → pi tự cài 18 extension (~150–200 s),
 4. Verify số extension khớp với `settings.json`.
 
 ## Bước 3 — login lại provider
@@ -224,7 +226,7 @@ Script tự:
 | `--bundle FILE` | restore từ `.tar.gz` |
 | `--target DIR` | đích khác `~/.pi/agent` |
 | `--scratch` | đích là thư mục tạm — **an toàn để thử** |
-| `--install` | chạy pi headless 1 lần để tự cài extension (~150–190 s) |
+| `--install` | chạy pi headless 1 lần để tự cài extension (~150–200 s) |
 | `--verify` | so số extension đã cài với `settings.json` |
 | `--with-trust` | copy cả `trust.json` |
 | `--dry-run` | chỉ in ra, không ghi |
@@ -252,7 +254,17 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | `auth.json` trong dir mới | `{}` → **không rò secret** |
 | Chạy lần 2 | log rỗng (0 byte) → **idempotent** |
 
-### Đường `--from-config config` (payload của repo — 17 package)
+### Đường `--from-config config` (payload hiện tại — 18 package)
+
+| Kiểm tra | Kết quả |
+|---|---|
+| Restore vào dir mới | ✅ `settings.json APPEND_SYSTEM.md models-store.json extensions` |
+| Cài 18 extension | ✅ **210 s**, module dirs `0 → 184` |
+| `--verify` | ✅ **`18/18 extension khớp`** |
+| Extension có **chạy** không | ✅ 16 `extension_ui_request`, **0 lỗi**, thấy cả `advisor-scout` + `advisor-usage` |
+| `pi list` trong bản restore | ✅ 18 package |
+
+### Cùng đường đó ở snapshot 17 package
 
 | Kiểm tra | Kết quả |
 |---|---|
@@ -274,7 +286,7 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | `pi list` trong bản restore | ✅ 16 package |
 | Config thật có bị đụng không | ✅ không (không sinh `settings.json.bak` mới) |
 
-### Clone từ repo public (kiểm chứng cuối)
+### Clone từ repo public (đo ở snapshot 16 package)
 
 ```bash
 git clone https://github.com/mrgoonie/zuey-pi-setup.git /tmp/verify-clone
@@ -333,6 +345,12 @@ skills/orca-per-workspace-env -> ../../../.agents/skills/orca-per-workspace-env
 
 **2 thư mục `agentkit-*` KHÔNG nằm trong repo.** AgentKit (`ak` CLI) tự cài `~/.pi/agent/extensions/agentkit-agent/` + `agentkit-hooks-engineer/` (1.2 MB, 79 file). Bên trong có cache chứa **path tuyệt đối** (`native-skill-paths.json` 157 KB, `native-skill-hashes.json` 280 KB) → máy-specific, không hợp lệ để đưa lên repo. `ak` tự cài lại trên máy mới.
 
+**`pi-advisor-flow`.** Flow Executor/Advisor cho ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc. Lệnh: `/advisor`, `/advisor-models`, `/advisor-settings`.
+
+Config toàn cục ở `~/.pi/agent/advisor.json` — ở **gốc** config dir, không trong `extensions/`, nên `ITEMS_SETUP` của backup script phải liệt kê riêng (project override bằng `<project>/.pi/advisor.json`).
+
+Extension này công bố thêm 2 status key `advisor-scout` + `advisor-usage`; cả hai đã vào `hiddenKeys` và có widget `external-status` inline → statusline vẫn **3 hàng** kể cả khi Advisor đang chạy (đã test với cả 11 key cùng có giá trị).
+
 ### `.pi-setup-exclude`
 
 `scripts/pi-setup-backup.sh --config-dir config` đọc `config/.pi-setup-exclude` (mỗi dòng 1 glob, `#` = comment) và xoá mọi file khớp sau khi mirror. Nhờ vậy chạy backup lại cũng **không** tự thêm `orca-*`/`agentkit-*` trở lại repo:
@@ -357,4 +375,5 @@ loại trừ: 82 file khớp .pi-setup-exclude (extensions/orca-*.ts extensions/
 - [ ] `pi auth check --provider opencode-go` → OK
 - [ ] Thử 1 extension, ví dụ `/btw <câu hỏi>` (cần TUI mode)
 - [ ] Chạy `/fallback-config` để cấu hình fallback model (sau đó backup tự kèm `provider-fallback.json`)
+- [ ] Chạy `/advisor-settings` để cấu hình Executor/Advisor (sau đó backup tự kèm `advisor.json`)
 - [ ] Cài AgentKit nếu cần skill symlink

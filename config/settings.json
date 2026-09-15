@@ -26,7 +26,8 @@
     "npm:pi-footer",
     "npm:pi-smart-fetch@0.3.17",
     "npm:@juicesharp/rpiv-btw",
-    "npm:pi-provider-fallback"
+    "npm:pi-provider-fallback",
+    "npm:pi-advisor-flow"
   ],
   "enabledModels": [
     "opencode-go/deepseek-v4.1-flash",

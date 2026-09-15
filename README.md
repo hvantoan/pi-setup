@@ -2,7 +2,7 @@
 
 # zuey-pi-setup
 
-**Portable snapshot của setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 17 extensions trên máy mới.**
+**Portable snapshot của setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 18 extensions trên máy mới.**
 
 pi `0.85.1` · Node `24` · macOS/Linux · cập nhật 2026-09-15
 
@@ -85,12 +85,13 @@ zuey-pi-setup/
 │   └── pi-setup-portable.tar.gz     bundle sẵn để tải (đã lọc — xem bên dưới)
 └── config/                          snapshot setup (plain file, diff được bằng git)
     ├── .pi-setup-exclude           glob loại trừ — backup tôn trọng file này
-    ├── settings.json               manifest 17 packages + model/theme/compaction
+    ├── settings.json               manifest 18 packages + model/theme/compaction
     ├── APPEND_SYSTEM.md            system prompt phụ
     ├── models-store.json           catalog model (khỏi chờ refresh 4h)
     └── extensions/                 extension tự viết, không có trên npm
         ├── pi-footer-cache-tps.ts  đẩy cache-TTL + tốc độ token (t/s) vào pi-footer
-        └── pi-footer.json          layout statusline (gồm context bar)
+        ├── pi-footer.json          layout statusline (gồm context bar)
+        └── provider-fallback.json  fallback model của pi-provider-fallback
 ```
 
 `config/` là **mirror** của phần setup trong `~/.pi/agent`. Mọi thứ khác (cache, secret, history) **không** được đưa vào.
@@ -120,7 +121,7 @@ Từ bản hiện tại, cùng file đó cũng dùng được cho **chế độ 
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **5 file** — `settings.json` (17 package), `APPEND_SYSTEM.md`, `models-store.json`, `extensions/pi-footer.json` và `extensions/pi-footer-cache-tps.ts`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **6 file** — `settings.json` (18 package), `APPEND_SYSTEM.md`, `models-store.json`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `extensions/provider-fallback.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -129,11 +130,11 @@ Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **5 file** — `
 | `extensions/orca-*.ts` (3 file, 1 239 dòng) | code do Orca sinh — bạn đã chọn không đưa lên public |
 | `extensions/agentkit-*` (95 file) | chứa `native-skill-paths.json` + `native-skill-hashes.json` (**path tuyệt đối**, danh sách 107 skill) và `hooks/.logs/hook-log.jsonl` (log hoạt động) |
 
-Restore bundle này cho kết quả **giống hệt** `config/` (17 extension + statusline). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
+Restore bundle này cho kết quả **giống hệt** `config/` (18 extension + statusline). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
 
 ---
 
-## 17 extensions trong snapshot
+## 18 extensions trong snapshot
 
 | # | Package | Version | Làm gì |
 |---|---|---|---|
@@ -154,6 +155,7 @@ Restore bundle này cho kết quả **giống hệt** `config/` (17 extension + 
 | 15 | `@juicesharp/rpiv-btw` | 2.10.1 | `/btw`: hỏi nhanh 1 câu bằng chính model chính, không làm bẩn conversation |
 | 16 | `pi-chime` | 1.2.1 | chuông terminal khi agent trả lời xong |
 | 17 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` giả TLS desktop browser + trích nội dung bằng defuddle |
+| 18 | `pi-advisor-flow` | 0.6.0 | flow Executor/Advisor: ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc |
 
 > Version là **tham khảo tại thời điểm snapshot**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
@@ -207,7 +209,7 @@ Statusline được xếp **đúng 3 hàng**, không bỏ widget nào:
 
 **Vì sao trước đây là 4 hàng:** pi-footer render số hàng trong `lines` **cộng thêm 1 hàng** (`extensionStatusRow`) chứa status do các extension khác công bố qua `ctx.ui.setStatus` (`mcp`, `goal`, `background-tasks`, `usage`). Ẩn hàng đó bằng `extensionStatusRow.hiddenKeys` và đưa chúng vào hàng 3 dưới dạng widget `external-status`.
 
-> ⚠️ `hiddenKeys` là danh sách key **chính xác**, không có wildcard. Nếu sau này một extension khác công bố status mới, hàng thứ 4 sẽ quay lại — thêm key đó vào `hiddenKeys` (hoặc dùng `/footer`). Các key đang được phủ: `background-tasks`, `goal`, `mcp`, `mcp-auth`, `stash`, `subagent-slash`, `subagent-slash-text`, `usage`, `worktree`.
+> ⚠️ `hiddenKeys` là danh sách key **chính xác**, không có wildcard. Nếu sau này một extension khác công bố status mới, hàng thứ 4 sẽ quay lại — thêm key đó vào `hiddenKeys` (hoặc dùng `/footer`). Các key đang được phủ (11): `advisor-scout`, `advisor-usage`, `background-tasks`, `goal`, `mcp`, `mcp-auth`, `stash`, `subagent-slash`, `subagent-slash-text`, `usage`, `worktree`.
 
 **Giới hạn độ rộng:** tổng nội dung là **243 ký tự** (201 của widget + 42 của separator) → 3 hàng thì hàng dài nhất **buộc phải ≥ 81**. Layout hiện tại cần terminal **≥ 85 cột**, hẹp hơn sẽ bị cắt đuôi bằng `…`. Muốn vừa terminal 80 cột, giảm độ rộng: `cwd` → `segments: 2` (−8) và `model-provider` → `model` (−11) ⇒ hàng dài nhất còn ~65.
 
@@ -229,6 +231,24 @@ Extension fallback model: khi model đang dùng gặp lỗi **transient / quota 
 Config lưu ở `~/.pi/agent/extensions/provider-fallback.json` → **nằm trong `extensions/` nên được backup mặc định** (script báo cáo tường minh trong phần *config extension*). Bản mẫu shape: `provider-fallback.example.json` trong package.
 
 > File này chỉ được tạo sau khi bạn chạy `/fallback-config` lần đầu. Nếu bạn đặt biến `PI_PROVIDER_FALLBACK_CONFIG` trỏ ra ngoài config dir, script sẽ cảnh báo là backup không tự thấy được.
+
+---
+
+## `pi-advisor-flow`
+
+Flow **Executor / Advisor**: model đang chạy việc (Executor) có thể xin ý kiến thứ hai từ một model mạnh hơn (Advisor). Có các **cổng review tự động** — trước khi lập plan, sau khi lỗi lặp lại nhiều lần, và trước khi tuyên bố hoàn thành — và có thể dừng hành động theo policy bạn cấu hình. Tham khảo paper *Steering Black-Box LLMs with Advisor Models*.
+
+```bash
+/advisor            # xin ý kiến Advisor (mở model picker nếu chưa cấu hình)
+/advisor-models     # chọn model Executor + Advisor
+/advisor-settings   # cấu hình behavior, context, privacy, limits
+```
+
+Config toàn cục ở **`~/.pi/agent/advisor.json`** — nằm ở **gốc** config dir, **không** trong `extensions/`, nên backup phải liệt kê riêng (đã làm). Project có thể override bằng `<project>/.pi/advisor.json`.
+
+Extension này còn công bố 2 status key (`advisor-scout`, `advisor-usage`) — đã được đưa vào `hiddenKeys` + widget inline như 9 key kia, để hàng status không quay lại khi Advisor đang chạy.
+
+State riêng của nó (`advisor-outcomes.jsonl`, `advisor-outcomes-salt`) là log/salt theo máy → đã cho vào `.pi-setup-exclude`, không lên repo.
 
 ---
 
@@ -289,10 +309,10 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 
 | Kiểm tra | Kết quả |
 |---|---|
-| Thời gian cài lần đầu | **136 s · 138 s · 153 s · 192 s** qua các lần chạy (tuỳ tốc độ npm) |
-| Module dirs trong `npm/node_modules` | **0 → 183** (snapshot 17 package) |
-| `--verify` | **17/17** ở lần chạy gần nhất (17 package), **16/16** ở 3 lần trước (snapshot 16 package) |
-| Extension **thực sự chạy** (không chỉ cài) | ✅ 11 `extension_ui_request`, 0 lỗi, đủ surface `subagent-async`, `mcp`, `goal`, `background-tasks`, `usage`, `pi-footer` |
+| Thời gian cài lần đầu | **136 s · 138 s · 153 s · 192 s · 210 s** qua các lần chạy (tuỳ tốc độ npm) |
+| Module dirs trong `npm/node_modules` | **0 → 184** (snapshot 18 package) |
+| `--verify` | **18/18** ở lần chạy gần nhất (18 package), **17/17** và **16/16** ở các snapshot trước |
+| Extension **thực sự chạy** (không chỉ cài) | ✅ 16 `extension_ui_request`, 0 lỗi, đủ surface `subagent-async`, `mcp`, `goal`, `background-tasks`, `usage`, `pi-footer`, `advisor-scout`, `advisor-usage` |
 | Clone repo public rồi restore | ✅ 11 file, 0 file bị loại, 153 s, verify khớp, 0 lỗi |
 | `auth.json` trong dir mới | `{}` → không rò secret |
 | Chạy lần 2 | log rỗng → idempotent |
@@ -311,6 +331,7 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 - **2 skill là symlink sang AgentKit** (`skills/orchestration`, `skills/orca-per-workspace-env`) → chỉ chạy nếu máy mới cài [AgentKit](https://github.com/bestagentkits). Gãy 2 symlink này **không** ảnh hưởng extension nào khác (đã test). Dùng `--skills` để backup kèm nội dung thật.
 - **3 extension `orca-*.ts`** và **2 thư mục `agentkit-*`** không nằm trong repo → Orca/AgentKit tự sinh lại.
 - **`pi-provider-fallback` config** chỉ có sau khi chạy `/fallback-config`; trước đó không có gì để backup.
+- **`pi-advisor-flow` config** (`~/.pi/agent/advisor.json`, nằm ở **gốc** config dir chứ không trong `extensions/`) chỉ tồn tại sau khi chạy `/advisor` hoặc `/advisor-settings`. Backup đã liệt kê riêng file này nên sẽ tự kèm khi nó xuất hiện.
 - **`pi` cài global theo từng Node version của nvm** → `nvm use` version khác có thể làm mất lệnh `pi`.
 
 ---
