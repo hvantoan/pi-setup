@@ -180,12 +180,18 @@ Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `model
 ```bash
 ./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (chỉ setup)
 ./scripts/pi-setup-backup.sh --config-dir config    # → ghi plain file vào config/ (để commit)
+./scripts/pi-setup-backup.sh --exclude-file config/.pi-setup-exclude   # bundle đã lọc
 ./scripts/pi-setup-backup.sh --skills --hooks       # thêm skills + hooks
 ./scripts/pi-setup-backup.sh --no-statusline        # KHÔNG lấy config statusline
 ./scripts/pi-setup-backup.sh --with-state           # = --skills --memory --missions
 ./scripts/pi-setup-backup.sh -o ~/Desktop/pi.tar.gz
 ./scripts/pi-setup-backup.sh --dry-run
 ```
+
+| Tùy chọn lọc | Tác dụng |
+|---|---|
+| `--exclude-file F` | loại mọi path khớp glob trong `F` (mỗi dòng 1 pattern, `#` = comment) — áp cho **cả** tarball lẫn `--config-dir`. Bundle trong `backups/` dùng đúng cơ chế này |
+| `--config-dir DIR` | đọc thêm `<DIR>/.pi-setup-exclude` khi mirror |
 
 | Opt-in (mặc định **không** lấy) | Lấy gì | Ghi chú |
 |---|---|---|
@@ -206,7 +212,7 @@ Script tự:
 - **quét secret** (`sk-*`, `ghp_*`, `BEGIN PRIVATE KEY`, `api_key=…`) và cảnh báo — bỏ qua placeholder trong tài liệu (`password: "securePassword123"`, `{CLIENT_SECRET}`) để cảnh báo còn lại mới đáng đọc;
 - **cảnh báo symlink trỏ ra ngoài** config dir (gợi ý dùng `--skills`);
 - **báo cáo config extension** trong phần tóm tắt: statusline (`pi-footer.json`) và provider-fallback (`provider-fallback.json`) có được backup hay không;
-- ở chế độ `--config-dir`, tôn trọng `<DIR>/.pi-setup-exclude` (glob loại trừ), dọn cả thư mục rỗng còn sót → artifact public không bị thêm lại file nhạy cảm;
+- ở chế độ `--config-dir`, tôn trọng `<DIR>/.pi-setup-exclude` (glob loại trừ), dọn cả thư mục rỗng còn sót → artifact public không bị thêm lại file nhạy cảm; ở chế độ tarball thì dùng `--exclude-file` cùng cú pháp;
 - nén **deterministic** (`gzip -n`) → cùng nội dung cho cùng SHA-256, kiểm tra được giữa 2 máy;
 - từ chối ghi `--config-dir` vào `$HOME`, `/`, hoặc chính thư mục config của pi.
 

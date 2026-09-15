@@ -38,6 +38,7 @@ ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models-store.json extensions)
 
 OUT="$ROOT/pi-setup-portable.tar.gz"
 CONFIG_DIR=""
+EXCLUDE_FILE=""
 QUIET=0
 DRY_RUN=0
 
@@ -67,6 +68,10 @@ CONFIG_CANDIDATES=(
 CONFIG_FOUND=()
 STATUSLINE_FOUND=()
 SKIP=()
+# Pattern loại trừ (từ --exclude-file và/hoặc <config-dir>/.pi-setup-exclude).
+# Khai báo Ở ĐÂY, không khai báo lại ở chỗ prune_excluded (sẽ reset mất giá trị).
+EXCLUDES=()
+
 # Các đường dẫn được --hooks yêu cầu rõ → không bị .pi-setup-exclude xoá.
 # Khai báo Ở ĐÂY (không khai báo lại ở chỗ prune_excluded, sẽ reset mất giá trị).
 PROTECT=()
@@ -82,6 +87,9 @@ Dùng: pi-setup-backup.sh [tùy chọn]
   -o, --output FILE     File tarball đầu ra (mặc định: <repo>/pi-setup-portable.tar.gz)
       --config-dir DIR  Ghi plain file vào DIR (dùng cho thư mục config/ được git track)
                         Tôn trọng <DIR>/.pi-setup-exclude (glob loại trừ, mỗi dòng 1 mục)
+      --exclude-file F  File glob loại trừ cho cả 2 chế độ (mỗi dòng 1 pattern, # = comment)
+                        VD: --exclude-file config/.pi-setup-exclude để bundle không chứa
+                        state của máy (path tuyệt đối, log, code do công cụ khác sinh)
 
 Opt-in thêm (mặc định KHÔNG lấy):
       --auth            auth.json      ⚠ chứa credential — không đưa lên nơi công khai
@@ -107,6 +115,7 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 		-o | --output) [ $# -ge 2 ] || die "-o cần tham số FILE"; OUT="$2"; shift 2 ;;
 		--config-dir) [ $# -ge 2 ] || die "--config-dir cần tham số DIR"; CONFIG_DIR="$2"; shift 2 ;;
+		--exclude-file) [ $# -ge 2 ] || die "--exclude-file cần tham số FILE"; EXCLUDE_FILE="$2"; shift 2 ;;
 		--auth) FLAG_AUTH=1; shift ;;
 		--skills) FLAG_SKILLS=1; shift ;;
 		--hooks) FLAG_HOOKS=1; shift ;;
@@ -147,6 +156,16 @@ done
 # Nếu người dùng trỏ config ra ngoài config dir thì backup không tự thấy được.
 if [ -n "${PI_PROVIDER_FALLBACK_CONFIG:-}" ]; then
 	warn "PI_PROVIDER_FALLBACK_CONFIG=$PI_PROVIDER_FALLBACK_CONFIG — file này nằm NGOÀI backup, copy thủ công nếu cần"
+fi
+
+# Pattern loại trừ từ --exclude-file (áp cho cả tarball lẫn --config-dir).
+if [ -n "$EXCLUDE_FILE" ]; then
+	[ -f "$EXCLUDE_FILE" ] || die "không thấy exclude file: $EXCLUDE_FILE"
+	while IFS= read -r line || [ -n "$line" ]; do
+		line="${line%%#*}"
+		line="$(printf '%s' "$line" | tr -d '[:space:]')"
+		[ -n "$line" ] && EXCLUDES+=("$line")
+	done <"$EXCLUDE_FILE"
 fi
 
 WANT=("${ITEMS_SETUP[@]}")
@@ -316,7 +335,6 @@ item_size() {
 # Danh sách loại trừ cho chế độ --config-dir: đọc <CONFIG_DIR>/.pi-setup-exclude
 # (mỗi dòng 1 glob đường dẫn tương đối trong CONFIG_DIR; '#' bắt đầu comment).
 # Nhờ file này, artifact công khai không bị script tự thêm lại file nhạy cảm.
-EXCLUDES=()
 load_excludes() {
 	local f="$CONFIG_DIR/.pi-setup-exclude"
 	[ -f "$f" ] || return 0
@@ -487,6 +505,23 @@ for p in "${SKIP[@]:-}"; do
 	[ -n "$p" ] || continue
 	EXCLUDE_OPTS+=("--exclude=$p")
 done
+# Pattern từ --exclude-file (bỏ qua pattern đã được --hooks yêu cầu rõ)
+for pat in "${EXCLUDES[@]:-}"; do
+	[ -n "$pat" ] || continue
+	skip_pat=0
+	for prot in "${PROTECT[@]:-}"; do
+		[ -n "$prot" ] || continue
+		# shellcheck disable=SC2254
+		case "$prot" in
+			$pat) skip_pat=1; break ;;
+		esac
+	done
+	if [ "$skip_pat" -eq 1 ]; then
+		warn "--hooks ghi đè pattern loại trừ: $pat"
+		continue
+	fi
+	EXCLUDE_OPTS+=("--exclude=$pat")
+done
 
 # Lưu ý: không dùng "${EXCLUDE_OPTS[@]:-}" — array rỗng sẽ thành 1 phần tử '' và tar báo lỗi.
 if [ "${#EXCLUDE_OPTS[@]}" -gt 0 ]; then
@@ -524,6 +559,9 @@ else
 	emit "  size:    $SIZE ($SIZE_BYTES byte, $FILE_COUNT file)"
 	emit "  mục:"
 	for item in "${INCLUDE[@]}"; do item_size "$item"; done
+	if [ "${#EXCLUDES[@]}" -gt 0 ]; then
+		emit "  loại trừ: ${EXCLUDES[*]}"
+	fi
 	emit "  packages: $(pkg_count) (từ settings.json)"
 	if [ "$FLAG_NO_STATUSLINE" -eq 1 ]; then
 		emit "  statusline: BỬ QUA (--no-statusline)${STATUSLINE_FOUND:+ — đã bỏ ${STATUSLINE_FOUND[*]}}"
