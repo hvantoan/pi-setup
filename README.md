@@ -49,6 +49,22 @@ Chi tiết đầy đủ, bảng copy/không-copy, xử lý sự cố: **[`docs/p
 
 ---
 
+## Screenshots
+
+Statusline được xếp đúng 3 hàng — context bar theo context window của model, tốc độ token, git, chi phí, và status của các extension khác được đưa vào cùng hàng:
+
+**Theme sáng** (thinking `high`) — lúc này `cache-hit-rate` và `cache_ttl` bằng 0 nên tự ẩn:
+
+![pi trong worktree zuey-pi với statusline 3 hàng, theme sáng](./screenshots/pi-statusline-3-rows-light.webp)
+
+**Theme tối** (thinking `off`) — đủ 5 widget hàng 2, gồm `cache-hit-rate` 79.8% và `cache_ttl` ~1s:
+
+![pi với statusline 3 hàng, theme tối](./screenshots/pi-statusline-3-rows-dark.webp)
+
+<sub>Ảnh crop từ CleanShot rồi nén **WebP q90**: 1078×626 / 40 KB và 1076×624 / 38 KB — giảm **94%** so với PNG gốc (696 KB). Bản gốc chưa xử lý để ở `screenshots/originals/` (đã gitignore).</sub>
+
+---
+
 ## Repo có gì
 
 ```
@@ -60,6 +76,8 @@ zuey-pi-setup/
 │   ├── README.md                    nguồn gốc, cách cài, cảnh báo Nerd Font
 │   ├── LICENSE.txt                  SIL Open Font License 1.1
 │   └── JetBrainsMono-1.0.2/         ttf/ (1 MB, dùng cho terminal) + web/ (2 MB, cho web)
+├── screenshots/                     ảnh statusline dùng trong README (WebP, ~40 KB/ảnh)
+│   └── originals/                   bản gốc CleanShot chưa xử lý (gitignore)
 ├── scripts/
 │   ├── pi-setup-backup.sh           đóng gói setup hiện tại của máy đang chạy
 │   └── pi-setup-restore.sh          dựng lại setup trên máy mới
@@ -167,11 +185,13 @@ Statusline được xếp **đúng 3 hàng**, không bỏ widget nào:
 
 **Vì sao trước đây là 4 hàng:** pi-footer render số hàng trong `lines` **cộng thêm 1 hàng** (`extensionStatusRow`) chứa status do các extension khác công bố qua `ctx.ui.setStatus` (`mcp`, `goal`, `background-tasks`, `usage`). Ẩn hàng đó bằng `extensionStatusRow.hiddenKeys` và đưa chúng vào hàng 3 dưới dạng widget `external-status`.
 
-> ⚠️ `hiddenKeys` là danh sách key **chính xác**, không có wildcard. Nếu sau này một extension khác công bố status mới, hàng thứ 4 sẽ quay lại — thêm key đó vào `hiddenKeys` (hoặc dùng `/footer`).
+> ⚠️ `hiddenKeys` là danh sách key **chính xác**, không có wildcard. Nếu sau này một extension khác công bố status mới, hàng thứ 4 sẽ quay lại — thêm key đó vào `hiddenKeys` (hoặc dùng `/footer`). Các key đang được phủ: `background-tasks`, `goal`, `mcp`, `mcp-auth`, `stash`, `subagent-slash`, `subagent-slash-text`, `usage`, `worktree`.
 
 **Giới hạn độ rộng:** tổng nội dung là **243 ký tự** (201 của widget + 42 của separator) → 3 hàng thì hàng dài nhất **buộc phải ≥ 81**. Layout hiện tại cần terminal **≥ 85 cột**, hẹp hơn sẽ bị cắt đuôi bằng `…`. Muốn vừa terminal 80 cột, giảm độ rộng: `cwd` → `segments: 2` (−8) và `model-provider` → `model` (−11) ⇒ hàng dài nhất còn ~65.
 
 > Config dùng `"iconMode": "nerd"` nên terminal cần **Nerd Font** (bản patch) mới hiện đủ icon. Trong `fonts/` có JetBrains Mono **gốc** (không patch) — xem [`fonts/README.md`](./fonts/README.md) để biết cách cài bản Nerd Font hoặc đổi sang `emoji`/`text`.
+
+Ảnh thật của layout này: xem [Screenshots](#screenshots).
 
 ---
 

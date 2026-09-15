@@ -7,3 +7,6 @@ pi-setup-install.log
 
 # Rác hệ điều hành
 .DS_Store
+
+# Bản screenshot gốc (chưa crop/nén) — không track
+screenshots/originals/
