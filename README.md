@@ -2,253 +2,255 @@
 
 # zuey-pi-setup
 
-**Portable snapshot của setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 22 extensions trên máy mới.**
+**A portable snapshot of my [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 22 extensions on a new machine.**
 
-pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-16
+pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-09-16
 
-**Tiếng Việt** · [English](./README.en.md)
+**English** · [Tiếng Việt](./README.vi.md)
 
 </div>
 
 ---
 
-## Vì sao có repo này
+## Why this repo exists
 
-`pi` không có tính năng export/import config. Repo này là cách mang **toàn bộ setup** sang máy khác một cách xác định (deterministic) và không cần copy cache:
+`pi` has no config export/import. This repo is a deterministic way to carry the **entire setup** to another machine without copying caches:
 
-- `~/.pi/agent/npm/` (~250 MB) — **không cần**, pi tự cài lại từ `settings.json`
-- `~/.pi/agent/auth.json` — **không đưa vào repo** (chứa API key + OAuth token), login lại ở máy mới
-- `~/.pi/agent/sessions/` (~56 MB) và `missions/` — **không đưa vào repo** (history/state, và có thể chứa dữ liệu nội bộ)
+- `~/.pi/agent/npm/` (~250 MB) — **not needed**, pi reinstalls it from `settings.json`
+- `~/.pi/agent/auth.json` — **not committed** (API keys + OAuth tokens), log in again on the new machine
+- `~/.pi/agent/sessions/` (~56 MB) and `missions/` — **not committed** (history/state, may contain internal data)
 
-Cơ chế: `settings.json` chứa mảng `packages`; pi đọc nó lúc khởi động và `npm install` mọi package còn thiếu. Nên mang được manifest = mang được cả bộ extension.
+The mechanism: `settings.json` holds a `packages` array; pi reads it on startup and `npm install`s anything missing. So if you can carry the manifest, you carry the whole extension set.
 
 ---
 
-## Quickstart (máy mới)
+## Quickstart (new machine)
 
 ```bash
-# 1) cài pi, đúng version
+# 1) install pi, exact version
 npm i -g @earendil-works/pi-coding-agent@0.85.1
 
 # 2) clone
 git clone https://github.com/mrgoonie/zuey-pi-setup.git
 cd zuey-pi-setup
 
-# 3) thử an toàn vào thư mục tạm (không đụng config thật)
+# 3) safe rehearsal into a temp dir (touches nothing real)
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify
 
-# 4) làm thật
+# 4) the real thing
 ./scripts/pi-setup-restore.sh --install --verify
 ```
 
-Sau đó login lại provider (auth không nằm trong repo):
+Then log the providers back in (auth is not in the repo):
 
 ```bash
-pi auth check --provider opencode-go    # và /login trong pi cho từng provider
+pi auth check --provider opencode-go    # and /login inside pi for each provider
 ```
 
-Thêm 1 bước tay: `@injaneity/pi-computer-use` cần cấp **Accessibility** và **Screen Recording** cho `~/Applications/pi-computer-use.app` (helper được cài tự động). Mở pi ở chế độ tương tác 1 lần và làm hết prompt setup — ở chế độ print, extension không hoạt động.
+One more manual step: `@injaneity/pi-computer-use` needs macOS **Accessibility** and **Screen Recording** granted to `~/Applications/pi-computer-use.app` (it installs the helper itself). Run pi interactively once and finish the setup prompt — in print mode the extension stays inert.
 
-Chi tiết đầy đủ, bảng copy/không-copy, xử lý sự cố: **[`docs/pi-setup-migration.md`](./docs/pi-setup-migration.md)**.
+Full details, copy/do-not-copy table, troubleshooting: **[`docs/pi-setup-migration.md`](./docs/pi-setup-migration.md)** (Vietnamese only).
 
-> **Windows:** script là **bash** → chạy trong **Git Bash** (hoặc WSL), **không** chạy bằng PowerShell/cmd. Xem [Windows (Git Bash)](#windows-git-bash).
+> **Windows:** the scripts are **bash** → run them in **Git Bash** (or WSL), **not** PowerShell/cmd. See [Windows (Git Bash)](#windows-git-bash).
 
 ---
 
 ## Windows (Git Bash)
 
-Đã chạy thật end-to-end trên **Windows 11 + Git Bash (MSYS2, bash 5.3)**: restore → `--install` → `--verify` → backup → tạo lại bundle. Không cần sửa gì thêm ngoài các lệnh ở Quickstart.
+Verified end-to-end on **Windows 11 + Git Bash (MSYS2, bash 5.3)**: restore → `--install` → `--verify` → backup → bundle rebuild. No extra steps beyond the Quickstart commands.
 
-| Khác biệt trên Windows | Trạng thái |
+| Windows difference | Status |
 |---|---|
-| Shell | Bắt buộc **Git Bash** (hoặc WSL). Script dùng POSIX bash + `tar`/`gzip`/`find`/`awk`… của MSYS |
-| Cài Node | Thường qua [`fnm`](https://github.com/Schniz/fnm) thay vì `nvm`. `pi` cài global **theo từng Node version** → `pi` chỉ có trong shell đã `fnm use` (đường dẫn kiểu `.../fnm_multishells/<id>/pi`) |
-| Đếm package (`--verify`) | Dùng **`node`** (từ bản này), không dùng `python3` — Windows hay thiếu `python3` hoặc gặp stub Microsoft Store |
-| `shasum` | Git Bash không có → script tự fallback sang `sha256sum` |
-| Đường dẫn truyền cho `pi` con | MSYS tự convert (`/c/Users/...` và `/tmp/...` → `C:/Users/...`) — đã kiểm chứng với `PI_CODING_AGENT_DIR` |
-| `--scratch` | Chạy được: `mktemp -d` + convert path cho tiến trình `pi` con |
-| CRLF | bash của Git Bash **chịu được CRLF** (đã test bằng bản copy CRLF). `.gitattributes` vẫn có `*.sh text eol=lf` để chắc ăn |
-| Symlink | Tạo symlink cần Developer Mode, nhưng repo chỉ **đọc/backup** symlink có sẵn nên không cần |
-| `tar` | Trong Git Bash dùng GNU tar (`/usr/bin/tar`), không phải `C:\Windows\System32\tar.exe` |
-| Font terminal | **Cần Nerd Font** nếu để `iconMode: "nerd"` — xem [Font terminal](#font-terminal-bắt-buộc-nerd-font) |
+| Shell | **Git Bash** (or WSL) is required. The scripts use POSIX bash plus MSYS `tar`/`gzip`/`find`/`awk` |
+| Installing Node | Usually via [`fnm`](https://github.com/Schniz/fnm) instead of `nvm`. `pi` installs globally **per Node version** → `pi` only exists in a shell that ran `fnm use` (path looks like `.../fnm_multishells/<id>/pi`) |
+| Counting packages (`--verify`) | Uses **`node`** (as of this revision), not `python3` — Windows often lacks `python3`, or hits the Microsoft Store stub |
+| `shasum` | Absent in Git Bash → the script falls back to `sha256sum` |
+| Paths passed to the child `pi` | MSYS converts `PI_CODING_AGENT_DIR` automatically (`/c/Users/...`, `/tmp/...` → `C:/Users/...`) — verified |
+| `--scratch` | Works: `mktemp -d` plus path conversion for the child `pi` process |
+| CRLF | Git Bash's bash **tolerates CRLF** (tested with a CRLF copy). `.gitattributes` still pins `*.sh text eol=lf` for safety |
+| Symlinks | Creating them needs Developer Mode, but the repo only **reads/backs up** existing symlinks, so it does not matter |
+| `tar` | Inside Git Bash this is GNU tar (`/usr/bin/tar`), not `C:\Windows\System32\tar.exe` |
+| Terminal font | A **Nerd Font** is required while `iconMode: "nerd"` — see [Terminal font](#terminal-font-nerd-font-required) |
 
-Ví dụ đầy đủ trên Windows:
+The full Windows sequence:
 
 ```bash
-# trong Git Bash
+# inside Git Bash
 fnm use 24
 npm i -g @earendil-works/pi-coding-agent@0.85.1
 git clone https://github.com/mrgoonie/zuey-pi-setup.git && cd zuey-pi-setup
-./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # thử an toàn
-./scripts/pi-setup-restore.sh --install --verify                                 # làm thật
+./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # rehearsal
+./scripts/pi-setup-restore.sh --install --verify                                 # for real
 ```
 
 ---
 
 ## Screenshots
 
-Statusline được xếp đúng 3 hàng — context bar theo context window của model, tốc độ token, git, chi phí, và status của các extension khác được đưa vào cùng hàng:
+The statusline is laid out in exactly three rows — context bar scaled to the model's context window, token speed, git, cost, and other extensions' statuses pulled onto the same rows:
 
-**Theme sáng** (thinking `high`) — lúc này `cache-hit-rate` và `cache_ttl` bằng 0 nên tự ẩn:
+**Light theme** (thinking `high`) — `cache-hit-rate` and `cache_ttl` are 0 here, so they hide themselves:
 
-![pi trong worktree zuey-pi với statusline 3 hàng, theme sáng](./screenshots/pi-statusline-3-rows-light.webp)
+![pi inside the zuey-pi worktree, 3-row statusline, light theme](./screenshots/pi-statusline-3-rows-light.webp)
 
-**Theme tối** (thinking `off`) — đủ 5 widget hàng 2, gồm `cache-hit-rate` 79.8% và `cache_ttl` ~1s:
+**Dark theme** (thinking `off`) — all five widgets on row 2, including `cache-hit-rate` 79.8% and `cache_ttl` ~1s:
 
-![pi với statusline 3 hàng, theme tối](./screenshots/pi-statusline-3-rows-dark.webp)
+![pi with the 3-row statusline, dark theme](./screenshots/pi-statusline-3-rows-dark.webp)
 
-<sub>Ảnh crop từ CleanShot rồi nén **WebP q90**: 1078×626 / 40 KB và 1076×624 / 38 KB — giảm **94%** so với PNG gốc (696 KB). Bản gốc chưa xử lý để ở `screenshots/originals/` (đã gitignore).</sub>
+<sub>Cropped from CleanShot and compressed as **WebP q90**: 1078×626 / 40 KB and 1076×624 / 38 KB — **94%** smaller than the original PNGs (696 KB). Unprocessed originals live in `screenshots/originals/` (gitignored).</sub>
 
 ---
 
-## Repo có gì
+## What's in the repo
 
 ```
 zuey-pi-setup/
-├── README.md                        ← bạn đang đọc
+├── README.md                        ← you are reading this
+├── README.vi.md                     Vietnamese README
+├── .gitattributes                   keeps *.sh at LF (Windows-friendly)
 ├── docs/
-│   └── pi-setup-migration.md        hướng dẫn chi tiết + số liệu kiểm chứng
-├── fonts/                           JetBrains Mono 1.0.2 (font terminal, OFL-1.1)
-│   ├── README.md                    nguồn gốc, cách cài, cảnh báo Nerd Font
+│   └── pi-setup-migration.md        detailed guide + verification data (Vietnamese)
+├── fonts/                           JetBrains Mono 1.0.2 (terminal font, OFL-1.1)
+│   ├── README.md                    provenance, install steps, Nerd Font warning
 │   ├── LICENSE.txt                  SIL Open Font License 1.1
-│   └── JetBrainsMono-1.0.2/         ttf/ (1 MB, dùng cho terminal) + web/ (2 MB, cho web)
-├── screenshots/                     ảnh statusline dùng trong README (WebP, ~40 KB/ảnh)
-│   └── originals/                   bản gốc CleanShot chưa xử lý (gitignore)
+│   └── JetBrainsMono-1.0.2/         ttf/ (1 MB, for terminals) + web/ (2 MB, for the web)
+├── screenshots/                     statusline images used in the README (WebP, ~40 KB each)
+│   └── originals/                   unprocessed CleanShot originals (gitignored)
 ├── scripts/
-│   ├── pi-setup-backup.sh           đóng gói setup hiện tại của máy đang chạy
-│   ├── pi-setup-restore.sh          dựng lại setup trên máy mới
-│   ├── pi-setup-verify-advisor.mjs  kiểm tra advisor.json theo schema thật của pi-advisor-flow
-│   └── pi-lens-compact-lsp-status.mjs  vá pi-lens: dòng status LSP gọn (`LSP ✓` / `LSP ✗`)
+│   ├── pi-setup-backup.sh           packages the current machine's setup
+│   ├── pi-setup-restore.sh          rebuilds that setup on a new machine
+│   ├── pi-setup-verify-advisor.mjs  validates advisor.json against pi-advisor-flow's real schema
+│   └── pi-lens-compact-lsp-status.mjs  patches pi-lens so the LSP status line is compact (`LSP ✓` / `LSP ✗`)
 ├── backups/
-│   └── pi-setup-portable.tar.gz     bundle sẵn để tải (đã lọc — xem bên dưới)
-└── config/                          snapshot setup (plain file, diff được bằng git)
-    ├── .pi-setup-exclude           glob loại trừ — backup tôn trọng file này
-    ├── settings.json               manifest 22 packages + model/theme/compaction
-    ├── advisor.json                config pi-advisor-flow (ở gốc config dir)
-    ├── 99extensions.json           config họ 99percentpeople (namespace todo)
-    ├── pi-lens-config.json          config pi-lens — nằm ở ~/.pi-lens/ NGOÀI config dir
-    ├── external-configs.txt        manifest: file nào đặt về đâu khi restore
-    ├── APPEND_SYSTEM.md            system prompt phụ
-    ├── models-store.json           catalog model (khỏi chờ refresh 4h)
+│   └── pi-setup-portable.tar.gz     ready-to-download bundle (filtered — see below)
+└── config/                          setup snapshot (plain files, git-diffable)
+    ├── .pi-setup-exclude           exclusion globs — backup honours this file
+    ├── settings.json               manifest of 22 packages + model/theme/compaction
+    ├── advisor.json                pi-advisor-flow config (at the config-dir root)
+    ├── 99extensions.json           99percentpeople family config (todo namespace)
+    ├── pi-lens-config.json          pi-lens config — lives in ~/.pi-lens/, OUTSIDE the config dir
+    ├── external-configs.txt        manifest: which file goes where on restore
+    ├── APPEND_SYSTEM.md            extra system prompt
+    ├── models-store.json           model catalog (saves the 4h refresh wait)
     ├── model-fallback/
-    │   └── config.json            rule fallback của pi-model-fallback (state.json không lấy)
-    └── extensions/                 extension tự viết, không có trên npm
-        ├── pi-footer-cache-tps.ts  đẩy cache-TTL + tốc độ token (t/s) vào pi-footer
-        └── pi-footer.json          layout statusline (gồm context bar)
+    │   └── config.json            pi-model-fallback rules (state.json is not taken)
+    └── extensions/                 locally written extensions, not on npm
+        ├── pi-footer-cache-tps.ts  pushes cache-TTL + token speed (t/s) into pi-footer
+        └── pi-footer.json          statusline layout (includes the context bar)
 ```
 
-`config/` là **mirror** của phần setup trong `~/.pi/agent`. Mọi thứ khác (cache, secret, history) **không** được đưa vào.
+`config/` is a **mirror** of the setup portion of `~/.pi/agent`. Everything else (cache, secrets, history) is **not** included.
 
-### Không nằm trong repo (do công cụ khác sinh, tự cài lại được)
+### Not in the repo (generated by other tools, reinstallable)
 
-| Bị loại | Do ai sinh | Vì sao loại |
+| Excluded | Generated by | Why |
 |---|---|---|
-| `extensions/orca-*.ts` (3 file, 1 239 dòng) | Orca (`@orca-managed-pi-extension`) | glue code tích hợp Orca; Orca tự sinh lại khi quản lý pi |
-| `extensions/agentkit-agent/`, `extensions/agentkit-hooks-engineer/` | AgentKit (`ak`) | 1.2 MB hook đã sinh + cache chứa **path tuyệt đối** (`native-skill-paths.json` 157 KB); `ak` tự cài lại |
-| `missions/`, `memory/`, `skills/` | pi / AgentKit | state theo máy, không phải setup |
+| `extensions/orca-*.ts` (3 files, 1,239 lines) | Orca (`@orca-managed-pi-extension`) | Orca integration glue; Orca regenerates it when it manages pi |
+| `extensions/agentkit-agent/`, `extensions/agentkit-hooks-engineer/` | AgentKit (`ak`) | 1.2 MB of generated hooks plus caches holding **absolute paths** (`native-skill-paths.json`, 157 KB); `ak` reinstalls them |
+| `missions/`, `memory/`, `skills/` | pi / AgentKit | machine-specific state, not setup |
 
 ### `.pi-setup-exclude`
 
-`scripts/pi-setup-backup.sh --config-dir config` đọc file này (mỗi dòng 1 glob, `#` = comment) và xoá mọi file khớp sau khi mirror. Nhờ vậy chạy backup lại cũng không tự thêm `orca-*`/`agentkit-*` trở lại repo:
+`scripts/pi-setup-backup.sh --config-dir config` reads this file (one glob per line, `#` for comments) and deletes every match after mirroring. That is why re-running the backup never drags `orca-*`/`agentkit-*` back into the repo:
 
 ```bash
-./scripts/pi-setup-backup.sh --config-dir config   # → "loại trừ: 82 file khớp .pi-setup-exclude"
+./scripts/pi-setup-backup.sh --config-dir config   # → "excluded: 82 files matched .pi-setup-exclude"
 ```
 
-Từ bản hiện tại, cùng file đó cũng dùng được cho **chế độ tarball** qua `--exclude-file`:
+The same file also works for **tarball mode** via `--exclude-file`:
 
 ```bash
 ./scripts/pi-setup-backup.sh -o backups/pi-setup-portable.tar.gz \
   --exclude-file config/.pi-setup-exclude
 ```
 
-### Config KHÔNG backup được: `@pi-unipi/notify`
+### A config that cannot be backed up: `@pi-unipi/notify`
 
-`~/.unipi/config/notify/config.json` chứa **token Gotify** và **botToken + chatId Telegram**, nên **cố ý không nằm** trong `EXTERNAL_CONFIGS` — đưa vào là lộ credential lên repo public. Trên máy mới phải thiết lập lại:
+`~/.unipi/config/notify/config.json` contains a **Gotify token** and **Telegram botToken + chatId**, so it is **deliberately absent** from `EXTERNAL_CONFIGS` — committing it would leak credentials to a public repo. Set it up again on the new machine:
 
 ```bash
-/unipi:notify-set-gotify     # cấu hình server Gotify
-/unipi:notify-set-tg         # cấu hình bot Telegram
-/unipi:notify-settings       # các tuỳ chọn còn lại
+/unipi:notify-set-gotify     # configure the Gotify server
+/unipi:notify-set-tg         # configure the Telegram bot
+/unipi:notify-settings       # everything else
 ```
 
-Cảnh báo này cũng ghi thẳng trong `scripts/pi-setup-backup.sh` để lần sau không vô tình thêm vào.
+The same warning is written directly in `scripts/pi-setup-backup.sh` so it is not accidentally added later.
 
-### Config nằm ngoài config dir
+### Config that lives outside the config dir
 
-Vài extension để config **bên ngoài** `~/.pi/agent/`, nên không thể lấy theo đường dẫn tương đối. Script có danh sách riêng cho nhóm này:
+A few extensions keep config **outside** `~/.pi/agent/`, so it cannot be collected by relative path. The script has a separate list for them:
 
 ```bash
-# trong scripts/pi-setup-backup.sh
+# in scripts/pi-setup-backup.sh
 EXTERNAL_CONFIGS=(
 	"~/.pi-lens/config.json:pi-lens-config.json"
 )
 ```
 
-- Backup copy mỗi file còn tồn tại vào artifact dưới tên `<tên>` (`pi-lens-config.json`), kèm **`external-configs.txt`** — manifest ghi `<tên>=<đường dẫn dạng ~>`.
-- Restore đọc manifest đó rồi đặt file về đúng chỗ (tự `mkdir -p`, tự snapshot bản cũ thành `*.bak.<timestamp>`).
-- Manifest dùng dạng `~` chứ không phải `/Users/...` nên artifact vẫn không lộ path của máy.
-- Thêm config ngoài mới = thêm 1 dòng vào `EXTERNAL_CONFIGS`; không phải sửa restore.
+- Backup copies each existing file into the artifact under `<name>` (`pi-lens-config.json`), plus **`external-configs.txt`** — a manifest of `<name>=<~-style path>`.
+- Restore reads that manifest and puts the file back where it belongs (`mkdir -p` as needed, snapshotting the old file as `*.bak.<timestamp>`).
+- The manifest uses `~` rather than `/Users/...`, so the artifact never leaks machine paths.
+- Adding another external config means adding one line to `EXTERNAL_CONFIGS`; restore needs no change.
 
-> ⚠️ **Tên artifact không được trùng basename config của `pi-lens`:** `pi-lens.json`,
-> `pi-lsp.json`, `.pi-lens.json`. pi-lens walk ngược lên từ **mỗi** thư mục nó resolve
-> config và khớp **đúng basename**, nên artifact `config/pi-lens.json` từng bị đọc như
-> project config deprecated → 4 warning `PILENS_CFG_0003` + 2 `PILENS_CFG_0001` mỗi lần
-> làm việc trong repo (và `format`/`autofix` của nó bị áp như project setting). Đổi tên
-> thành `pi-lens-config.json` là hết; script có guard `pi_lens_reserved_name` cảnh báo nếu
-> sau này ai thêm lại tên cũ.
+> ⚠️ **Artifact names must not collide with pi-lens' config basenames:** `pi-lens.json`,
+> `pi-lsp.json`, `.pi-lens.json`. pi-lens walks upward from **every** directory it resolves
+> config for and matches the **exact basename**, so an artifact named `config/pi-lens.json`
+> used to be read as a deprecated project config → 4 `PILENS_CFG_0003` warnings plus
+> 2 `PILENS_CFG_0001` on every session inside this repo (and its `format`/`autofix` were
+> applied as project settings). Renaming it to `pi-lens-config.json` fixed that; the script
+> now has a `pi_lens_reserved_name` guard that warns if the old name ever comes back.
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **9 file** — `settings.json` (22 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `model-fallback/config.json`.
+A ready-made bundle so you don't have to clone and run the backup yourself: **9 files** — `settings.json` (22 packages), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, and `model-fallback/config.json`.
 
-Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
+It is the script's full default bundle, **filtered** through `.pi-setup-exclude` so machine-only material never reaches this public repo:
 
-| Bị loại | Vì sao |
+| Excluded | Why |
 |---|---|
-| `extensions/orca-*.ts` (3 file, 1 239 dòng) | code do Orca sinh — bạn đã chọn không đưa lên public |
-| `extensions/agentkit-*` (95 file) | chứa `native-skill-paths.json` + `native-skill-hashes.json` (**path tuyệt đối**, danh sách 107 skill) và `hooks/.logs/hook-log.jsonl` (log hoạt động) |
+| `extensions/orca-*.ts` (3 files, 1,239 lines) | Orca-generated code — deliberately kept out of the public repo |
+| `extensions/agentkit-*` (95 files) | Contains `native-skill-paths.json` + `native-skill-hashes.json` (**absolute paths**, a list of 107 skills) and `hooks/.logs/hook-log.jsonl` (activity log) |
 
-Restore bundle này cho cùng bộ file như `config/` — đủ 22 extension + statusline. Đây là snapshot của máy, nên `settings.json` trong bundle có thể khác `config/settings.json` ở những key bạn đổi sau đó (ví dụ model mặc định, TUI mode). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
+Restoring this bundle yields the same file set as `config/` — all 22 extensions plus the statusline. It is a snapshot of this machine, so its `settings.json` can differ from `config/settings.json` in keys changed afterwards (e.g. default model, TUI mode). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
 
 ---
 
-## 22 extensions trong snapshot
+## The 22 extensions in this snapshot
 
-| # | Package | Version | Làm gì |
+| # | Package | Version | What it does |
 |---|---|---|---|
-| 1 | `pi-web-access` | 0.29.0 | web search, fetch URL, clone GitHub repo, đọc PDF, hiểu YouTube + video local |
-| 2 | `pi-mcp-adapter` | 2.34.0 | adapter MCP (Model Context Protocol) |
-| 3 | `pi-subagents` | 0.68.0 | delegate cho subagent + workflow multi-agent bằng script |
-| 4 | `pi-goal-x` | 0.31.4 | `/goal`: lập kế hoạch mục tiêu, tiến độ bền, auditor kiểm tra hoàn thành |
-| 5 | `pi-background-tasks` | 2.5.0 | task shell chạy nền, delegated agent read-only, attested run, Fusion workflow |
-| 6 | `pi-model-fallback` | 0.4.0 | chuyển sang model fallback theo **rule** (provider/model + HTTP status 429/5xx) khi provider lỗi; state bền có cooldown; config bằng tool `model_fallback_config` |
-| 7 | `@narumitw/pi-usage` | 0.60.8 | hiển thị usage của account + số dư DeepSeek API |
-| 8 | `pi-simplify` | 0.2.3 | review code vừa đổi theo hướng rõ ràng / nhất quán / dễ bảo trì |
-| 9 | `pi-footer` | 0.5.1 | statusline nhiều dòng, tuỳ biến được (dùng trong repo này) |
-| 10 | `pi-powerline-footer` | 0.17.1 | status bar kiểu powerline (đang **tắt** bằng `"extensions": []`) |
-| 11 | `pi-memory` | 0.4.2 | memory + semantic search (qmd) trên daily log / long-term / scratchpad |
-| 12 | `pi-worktree` | 1.3.3 | quản lý git worktree, tạo workspace cách ly bằng 1 lệnh |
-| 13 | `@99percentpeople/pi-todo` | 1.2.7 | todo tối giản, atomic: xoá bằng omission, state sống qua compaction, có dependencies, widget read-only |
-| 14 | `@juicesharp/rpiv-ask-user-question` | 2.10.1 | hỏi bạn bằng questionnaire có lựa chọn thay vì đoán |
-| 15 | `@juicesharp/rpiv-btw` | 2.10.1 | `/btw`: hỏi nhanh 1 câu bằng chính model chính, không làm bẩn conversation |
-| 16 | `@pi-unipi/notify` | 2.17.0 | thông báo khi agent xong/lỗi: native OS, Gotify, Telegram, ntfy, định tuyến theo từng loại event (⚠ config chứa credential — không backup) |
-| 17 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` giả TLS desktop browser + trích nội dung bằng defuddle |
-| 18 | `pi-advisor-flow` | 0.6.0 | flow Executor/Advisor: ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc |
-| 19 | `@tmustier/pi-session-recap` | 0.5.0 | recap “while you were away”: soạn sẵn bản tóm tắt khi bạn rời session, hiện ở cuối transcript / trên editor lúc quay lại. Cho workflow nhiều agent chạy song song |
-| 20 | `pi-lens` | 4.1.6 | LSP diagnostics + navigation, linters/type-checker, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. Trong setup này đã tắt widget + autoformat + autofix (xem mục riêng) |
-| 21 | `pi-browser-use` | 0.11.7 | trình duyệt cho agent qua `chrome-devtools-mcp` (không phải Playwright): Chrome headless riêng của pi với profile `~/.pi/browser-profile` (login 1 lần bằng `browser_setup`), chế độ `fresh` cách ly, tool `browser_*` + skill `browser-policy`. Cần Node ≥ 24 và Chrome stable. `browser_doctor` để tự chẩn đoán |
-| 22 | `@injaneity/pi-computer-use` | 0.5.1 | cho agent điều khiển app desktop trên macOS, Windows và Linux qua accessibility API của hệ điều hành: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Cài helper riêng cho user ở `~/Applications/pi-computer-use.app`; macOS cần cấp **Accessibility** + **Screen Recording** cho helper, và bước setup chỉ chạy trong session pi tương tác → ở chế độ `-p` (print) extension chưa làm được gì cho tới khi bạn cấp quyền |
+| 1 | `pi-web-access` | 0.29.0 | web search, URL fetch, GitHub repo cloning, PDF reading, YouTube + local video understanding |
+| 2 | `pi-mcp-adapter` | 2.34.0 | MCP (Model Context Protocol) adapter |
+| 3 | `pi-subagents` | 0.68.0 | subagent delegation + scripted multi-agent workflows |
+| 4 | `pi-goal-x` | 0.31.4 | `/goal`: goal planning, durable progress, an auditor that checks completion |
+| 5 | `pi-background-tasks` | 2.5.0 | background shell tasks, read-only delegated agents, attested runs, Fusion workflows |
+| 6 | `pi-model-fallback` | 0.4.0 | switches to a fallback model by **rule** (provider/model + HTTP status 429/5xx) on provider failure; durable state with cooldowns; configured through the `model_fallback_config` tool |
+| 7 | `@narumitw/pi-usage` | 0.60.8 | account usage display + DeepSeek API balance |
+| 8 | `pi-simplify` | 0.2.3 | reviews just-changed code for clarity, consistency, maintainability |
+| 9 | `pi-footer` | 0.5.1 | multi-row, customisable statusline (used by this repo) |
+| 10 | `pi-powerline-footer` | 0.17.1 | powerline-style status bar (currently **off** via `"extensions": []`) |
+| 11 | `pi-memory` | 0.4.2 | memory + semantic search (qmd) over daily log / long-term / scratchpad |
+| 12 | `pi-worktree` | 1.3.3 | git worktree management, isolated workspaces in one command |
+| 13 | `@99percentpeople/pi-todo` | 1.2.7 | minimal atomic todo: removal by omission, state survives compaction, dependencies, read-only widget |
+| 14 | `@juicesharp/rpiv-ask-user-question` | 2.10.1 | asks you through multiple-choice questionnaires instead of guessing |
+| 15 | `@juicesharp/rpiv-btw` | 2.10.1 | `/btw`: quick one-off question answered by the main model without polluting the conversation |
+| 16 | `@pi-unipi/notify` | 2.17.0 | notifications when an agent finishes or fails: native OS, Gotify, Telegram, ntfy, routed per event type (⚠ config holds credentials — never backed up) |
+| 17 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` with a desktop-browser TLS fingerprint + defuddle content extraction |
+| 18 | `pi-advisor-flow` | 0.6.0 | Executor/Advisor flow: a second opinion from a stronger model, with review gates before planning / after repeated failures / before declaring done |
+| 19 | `@tmustier/pi-session-recap` | 0.5.0 | "while you were away" recap: drafts a short summary when you leave a session and shows it at the end of the transcript / above the editor when you return. Built for many parallel agents |
+| 20 | `pi-lens` | 4.1.6 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
+| 21 | `pi-browser-use` | 0.11.7 | agent browser via `chrome-devtools-mcp` (not Playwright): Pi's own headless Chrome on a dedicated `~/.pi/browser-profile` (log in once with `browser_setup`), isolated `fresh` mode, `browser_*` tools plus the bundled `browser-policy` skill. Needs Node ≥ 24 and Chrome stable. Run `browser_doctor` for self-diagnostics |
+| 22 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
 
-> Version là **tham khảo tại thời điểm snapshot**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
+> Versions are **for reference at snapshot time**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
-Provider mặc định: `opencode-go/deepseek-v4.1-flash` (thinking `high`). Model đang bật: xem `enabledModels` trong `config/settings.json`.
+Default provider: `opencode-go/deepseek-v4.1-flash` (thinking `high`). Enabled models: see `enabledModels` in `config/settings.json`.
 
 ---
 
 ## Statusline: context bar (0–100%)
 
-Statusline là `pi-footer`, cấu hình ở `config/extensions/pi-footer.json`. Repo này bật sẵn widget **`context-bar`** — thanh tiến độ context theo **context window của từng model** (không phải số cố định):
+The statusline is `pi-footer`, configured in `config/extensions/pi-footer.json`. This repo enables the **`context-bar`** widget — a progress bar scaled to **each model's own context window** (not a fixed number):
 
 ```json
 {
@@ -261,7 +263,7 @@ Statusline là `pi-footer`, cấu hình ở `config/extensions/pi-footer.json`. 
 }
 ```
 
-Kết quả render thật (gọi trực tiếp `render()` của widget, context window 200k):
+Real output (calling the widget's `render()` directly, 200k context window):
 
 ```
    0%  [░░░░░░░░░░░░░░░░] 0/200k (0%)        fg=blue
@@ -270,73 +272,73 @@ Kết quả render thật (gọi trực tiếp `render()` của widget, context 
   92%  [███████████████░] 184k/200k (92%)     fg=red      ← ≥ 90%
 ```
 
-Model khác thì thang chia khác — context 1M ở 25% ra `[████░░░░░░░░░░░░] 250k/1m (25%)`. Khi chưa biết context length thì hiện `?`.
+Other models scale differently — a 1M context at 25% renders `[████░░░░░░░░░░░░] 250k/1m (25%)`. When the context length is unknown it prints `?`.
 
-| Muốn đổi | Sửa gì trong `pi-footer.json` |
+| Want to change | Edit in `pi-footer.json` |
 |---|---|
-| Độ rộng / kiểu bar | `contextBarMode`: `default` (32 ô, có ngoặc) · `medium` (16 ô, đang dùng) · `short` (10 ô) · `short-only` (10 ô, không hiện số) |
-| Bật/tắt đổi màu theo % | `contextConditionalColors` (ngưỡng `contextWarningPercent` 70, `contextDangerPercent` 90) |
-| Hiện token thô thay vì bar | đổi `"type": "context-bar"` → `"context-length"`, hoặc dùng `"context-remaining"` / `"context-window"` |
+| Bar width / style | `contextBarMode`: `default` (32 cells, bracketed) · `medium` (16 cells, used here) · `short` (10 cells) · `short-only` (10 cells, no numbers) |
+| Percentage-based colours | `contextConditionalColors` (thresholds `contextWarningPercent` 70, `contextDangerPercent` 90) |
+| Raw tokens instead of a bar | change `"type": "context-bar"` → `"context-length"`, or use `"context-remaining"` / `"context-window"` |
 
-Dòng 2 của statusline hiện tại: `context-bar` → `cache-hit-rate` → 2 event widget (`cache_ttl`, `tps` do `pi-footer-cache-tps.ts` đẩy vào).
+Today's row 2: `context-bar` → `cache-hit-rate` → 2 event widgets (`cache_ttl`, `tps`, pushed in by `pi-footer-cache-tps.ts`).
 
-### Layout 3 hàng
+### 3-row layout
 
-Statusline được xếp **đúng 3 hàng**, không bỏ widget nào:
+The statusline is arranged in **exactly three rows**, dropping no widget:
 
-| Hàng | Nội dung | Width |
+| Row | Content | Width |
 |---|---|---|
 | 1 | `cwd` · `model-provider` · `thinking-level` | 71 |
 | 2 | `context-bar` · `cache-hit-rate` · `cache_ttl` · `tps` · `total-time` | 80 |
 | 3 | `git-branch` · `git-diff` · `cost` · `mcp` · `background-tasks` · `goal` · `usage` | 84 |
 
-**Vì sao trước đây là 4 hàng:** pi-footer render số hàng trong `lines` **cộng thêm 1 hàng** (`extensionStatusRow`) chứa status do các extension khác công bố qua `ctx.ui.setStatus` (`mcp`, `goal`, `background-tasks`, `usage`). Ẩn hàng đó bằng `extensionStatusRow.hiddenKeys` và đưa chúng vào hàng 3 dưới dạng widget `external-status`.
+**Why it used to be four rows:** pi-footer renders the `lines` you configured **plus one extra row** (`extensionStatusRow`) holding statuses published by other extensions through `ctx.ui.setStatus` (`mcp`, `goal`, `background-tasks`, `usage`). That row is hidden with `extensionStatusRow.hiddenKeys` and the statuses move onto row 3 as `external-status` widgets.
 
-> ⚠️ `hiddenKeys` là danh sách key **chính xác**, không có wildcard. Nếu sau này một extension khác công bố status mới, hàng thứ 4 sẽ quay lại — thêm key đó vào `hiddenKeys` (hoặc dùng `/footer`). Các key đang được phủ (13): `advisor-scout`, `advisor-usage`, `background-tasks`, `goal`, `mcp`, `mcp-auth`, `pi-lens-lsp`, `session-recap`, `stash`, `subagent-slash`, `subagent-slash-text`, `usage`, `worktree`.
+> ⚠️ `hiddenKeys` is an **exact** key list, no wildcards. If another extension publishes a new status later, the fourth row comes back — add that key to `hiddenKeys` (or use `/footer`). Keys currently covered (13): `advisor-scout`, `advisor-usage`, `background-tasks`, `goal`, `mcp`, `mcp-auth`, `pi-lens-lsp`, `session-recap`, `stash`, `subagent-slash`, `subagent-slash-text`, `usage`, `worktree`.
 
-**Giới hạn độ rộng:** tổng nội dung là **243 ký tự** (201 của widget + 42 của separator) → 3 hàng thì hàng dài nhất **buộc phải ≥ 81**. Layout hiện tại cần terminal **≥ 85 cột**, hẹp hơn sẽ bị cắt đuôi bằng `…`. Muốn vừa terminal 80 cột, giảm độ rộng: `cwd` → `segments: 2` (−8) và `model-provider` → `model` (−11) ⇒ hàng dài nhất còn ~65.
+**Width budget:** total content is **243 characters** (201 of widgets + 42 of separators) → across 3 rows the longest row **must be ≥ 81**. The current layout needs a terminal **≥ 85 columns**; narrower and the tail is truncated with `…`. To fit an 80-column terminal, shrink it: `cwd` → `segments: 2` (−8) and `model-provider` → `model` (−11) ⇒ longest row drops to ~65.
 
-> ⚠️ Config dùng `"iconMode": "nerd"` nên terminal cần **Nerd Font** (bản patch) mới hiện đủ icon. Trong `fonts/` có JetBrains Mono **gốc** (không patch) — cài bản gốc rồi trỏ terminal vào đó là **icon vỡ**: xem [Font terminal](#font-terminal-bắt-buộc-nerd-font).
+> ⚠️ The config uses `"iconMode": "nerd"`, so the terminal needs a **Nerd Font** (patched build) for the icons to render. `fonts/` ships **unpatched** JetBrains Mono — installing that one and pointing your terminal at it is exactly how you get **broken icons**: see [Terminal font](#terminal-font-nerd-font-required).
 
-Ảnh thật của layout này: xem [Screenshots](#screenshots).
+Real screenshot of this layout: see [Screenshots](#screenshots).
 
-### Font terminal: bắt buộc Nerd Font
+### Terminal font: Nerd Font required
 
-**Đây không phải chi tiết nhỏ.** Mọi icon của statusline là codepoint **Private Use Area** của Nerd Fonts:
+**This is not a minor detail.** Every statusline icon is a Nerd Fonts **Private Use Area** codepoint:
 
-| Widget | Codepoint | JetBrains Mono (gốc) | DankMono Nerd Font Mono | FantasqueSansMono NF Mono |
+| Widget | Codepoint | JetBrains Mono (unpatched) | DankMono Nerd Font Mono | FantasqueSansMono NF Mono |
 |---|---|---|---|---|
-| `cwd` | U+F07C | ❌ thiếu | ✅ | ✅ |
-| `model-provider` | U+F06A9 | ❌ thiếu | ✅ | ❌ thiếu |
-| `thinking-level` | U+F0208 | ❌ thiếu | ✅ | ❌ thiếu |
-| `context-bar` | U+F035B | ❌ thiếu | ✅ | ❌ thiếu |
-| `cache-hit-rate` | U+F04CE | ❌ thiếu | ✅ | ❌ thiếu |
-| `total-time` | U+F13AB | ❌ thiếu | ✅ | ❌ thiếu |
-| `git-branch` | U+E725 | ❌ thiếu | ✅ | ✅ |
-| `git-diff` | U+E702 | ❌ thiếu | ✅ | ✅ |
-| `cost` | U+F04A3 | ❌ thiếu | ✅ | ❌ thiếu |
-| `cache_ttl`, `tps` (event) | U+F01BC, U+EAF3 | ❌ thiếu | ✅ | ❌ thiếu |
+| `cwd` | U+F07C | ❌ missing | ✅ | ✅ |
+| `model-provider` | U+F06A9 | ❌ missing | ✅ | ❌ missing |
+| `thinking-level` | U+F0208 | ❌ missing | ✅ | ❌ missing |
+| `context-bar` | U+F035B | ❌ missing | ✅ | ❌ missing |
+| `cache-hit-rate` | U+F04CE | ❌ missing | ✅ | ❌ missing |
+| `total-time` | U+F13AB | ❌ missing | ✅ | ❌ missing |
+| `git-branch` | U+E725 | ❌ missing | ✅ | ✅ |
+| `git-diff` | U+E702 | ❌ missing | ✅ | ✅ |
+| `cost` | U+F04A3 | ❌ missing | ✅ | ❌ missing |
+| `cache_ttl`, `tps` (events) | U+F01BC, U+EAF3 | ❌ missing | ✅ | ❌ missing |
 
-JetBrains Mono **gốc** (bản trong `fonts/`) thiếu **11/11** icon. Khi thiếu, terminal **không** để trống ô — nó fallback sang font khác có codepoint đó, nên icon hiện ra thành **hình vô nghĩa** (kim cương ◆, ngôi sao ✦, hay dấu `?`), chứ không phải lỗi config.
+Unpatched JetBrains Mono (the build in `fonts/`) is missing **11/11**. When a glyph is missing the terminal does **not** leave the cell blank — it falls back to another font that has that codepoint, so icons render as **meaningless shapes** (a diamond ◆, a star ✦, or a `?`) rather than a config error.
 
-**Sửa — chọn 1 trong 2:**
+**Fix — pick one:**
 
-**A. Dùng Nerd Font cho terminal** (giữ nguyên icon đẹp, khuyến nghị). Bản **Mono** (single-width) là bắt buộc cho TUI, không dùng bản non-Mono vì icon sẽ rộng 2 ô và lệch cột.
+**A. Give the terminal a Nerd Font** (keeps the proper icons; recommended). The **Mono** (single-width) variant is required for TUIs — non-Mono builds draw two-cell-wide icons and break column alignment.
 
 ```bash
 # macOS
-brew install --cask font-jetbrains-mono-nerd-font     # hoặc font-dank-mono-nerd-font
+brew install --cask font-jetbrains-mono-nerd-font     # or font-dank-mono-nerd-font
 ```
 
 ```powershell
-# Windows: cài font theo user (copy + đăng ký registry), hoặc bôi đen .otf/.ttf → chuột phải → Install
+# Windows: install per-user (copy the file AND register it), or select the .otf/.ttf → right-click → Install
 $dst = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
 Copy-Item .\DankMonoNerdFontMono-Regular.otf $dst
 New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts" `
   -Name "DankMono Nerd Font Mono (TrueType)" -Value "$dst\DankMonoNerdFontMono-Regular.otf" -PropertyType String -Force
 ```
 
-Rồi trỏ terminal vào font đó. Với Windows Terminal — sửa `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json`, đặt ở `profiles.defaults` để áp cho **mọi** profile (profile có `font` riêng sẽ **ghi đè** defaults, nên phải sửa cả profile đó):
+Then point the terminal at it. For Windows Terminal, edit `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json` and set it under `profiles.defaults` so **every** profile inherits it (a profile with its own `font` **overrides** defaults, so that profile must be edited too):
 
 ```json
 "profiles": {
@@ -346,24 +348,26 @@ Rồi trỏ terminal vào font đó. Với Windows Terminal — sửa `%LOCALAPP
 }
 ```
 
-> Profile nào đã có `font` riêng thì sửa `face` của chính profile đó (Windows Terminal tự hot-reload file `settings.json`; nên backup file này trước khi sửa).
+> Any profile that already defines `font` must have its own `face` changed. Windows Terminal hot-reloads `settings.json`, so back the file up before editing.
 
-**B. Không muốn cài font patch:** đổi `"iconMode": "nerd"` → `"emoji"` (dùng 📁… render bằng Segoe UI Emoji trên Windows / Apple Color Emoji trên macOS) hoặc `"text"` (chữ thuần, không icon). Đổi lại: icon to hơn và statusline kém gọn.
+More on the bundled font — provenance, install steps for both platforms, license: [`fonts/README.md`](./fonts/README.md).
+
+**B. Skip patched fonts entirely:** change `"iconMode": "nerd"` → `"emoji"` (renders 📁… via Segoe UI Emoji on Windows / Apple Color Emoji on macOS) or `"text"` (plain words, no icons). Trade-off: larger icons and a less compact statusline.
 
 ---
 
 ## pi-model-fallback
 
-Extension fallback model theo **rule**: khi provider trả về HTTP status khớp rule (mặc định `429`, `500`, `502`, `503`, `504`), pi chuyển sang model fallback của rule đó và ghi **state bền** để các session sau vẫn dùng model mới cho tới khi hết cooldown (`429` → 72 giờ, `5xx` → 10 phút; header `Retry-After` / `x-ratelimit-reset*` ghi đè khi có). Rule khớp theo thứ tự, rule đầu tiên thắng — nên rule `matchModels` cụ thể phải đặt trước rule `matchProviders` rộng.
+A rule-based model-fallback extension: when a provider returns an HTTP status matching a rule (by default `429`, `500`, `502`, `503`, `504`), pi switches to that rule's fallback model and persists **durable state** so later sessions keep using the new model until the cooldown expires (`429` → 72 hours, `5xx` → 10 minutes; `Retry-After` / `x-ratelimit-reset*` headers override when present). Rules match in order and the first match wins — so specific `matchModels` rules must come before broad `matchProviders` rules.
 
 ```bash
-/model-fallback:status   # đang bật hay không, entry bền nào active, path config/state
-/model-fallback:reset    # xoá state bền + quay về model trước fallback
+/model-fallback:status   # whether it is enabled, which durable entry is active, config/state paths
+/model-fallback:reset    # clear durable state and return to the pre-fallback model
 ```
 
-`autoRetry` (mặc định bật) đưa lại prompt lỗi thành follow-up sau khi đã đổi model; bản thân request lỗi không được gửi lại.
+`autoRetry` (on by default) re-queues the failed prompt as a follow-up after the model switch; the failed request itself is not replayed.
 
-Config ở `~/.pi/agent/model-fallback/config.json`, do tool `model_fallback_config` của extension đọc/validate/ghi — **không có TUI** như `pi-provider-fallback` (đã gỡ khỏi snapshot này). Mặc định của package là `zai/*` → `deepseek/deepseek-v4-flash`; snapshot này thay bằng rule cho provider `deepseek`:
+Config lives at `~/.pi/agent/model-fallback/config.json` and is read/validated/written by the extension's `model_fallback_config` tool — there is **no TUI**, unlike `pi-provider-fallback` (removed from this snapshot). The package default is `zai/*` → `deepseek/deepseek-v4-flash`; this snapshot replaces it with a rule for the `deepseek` provider:
 
 ```json
 {
@@ -381,48 +385,48 @@ Config ở `~/.pi/agent/model-fallback/config.json`, do tool `model_fallback_con
 }
 ```
 
-> Điểm khác đáng chú ý so với extension cũ: config **không** nằm trong `extensions/` mà cùng thư mục với `state.json`. Vì vậy `scripts/pi-setup-backup.sh` liệt kê riêng `model-fallback/config.json` và **chỉ lấy file config** — `state.json` là state theo máy nên không được đưa vào artifact; restore cũng chỉ ghi `config.json`.
+> The notable difference from the previous extension: the config is **not** inside `extensions/` but in the same directory as `state.json`. So `scripts/pi-setup-backup.sh` lists `model-fallback/config.json` explicitly and **takes only the config file** — `state.json` is machine state and never ships; restore also writes only `config.json`.
 
 ---
 
 ## `pi-advisor-flow`
 
-Flow **Executor / Advisor**: model đang chạy việc (Executor) có thể xin ý kiến thứ hai từ một model mạnh hơn (Advisor). Có các **cổng review tự động** — trước khi lập plan, sau khi lỗi lặp lại nhiều lần, và trước khi tuyên bố hoàn thành — và có thể dừng hành động theo policy bạn cấu hình. Tham khảo paper *Steering Black-Box LLMs with Advisor Models*.
+An **Executor / Advisor** flow: the model doing the work (Executor) can ask a stronger model (Advisor) for a second opinion. It has **automatic review gates** — before planning, after repeated failures, and before declaring completion — and can halt actions according to the policy you configure. Based on the paper *Steering Black-Box LLMs with Advisor Models*.
 
 ```bash
-/advisor            # xin ý kiến Advisor (mở model picker nếu chưa cấu hình)
-/advisor-models     # chọn model Executor + Advisor
-/advisor-settings   # cấu hình behavior, context, privacy, limits
+/advisor            # consult the Advisor (opens a model picker if unconfigured)
+/advisor-models     # choose the Executor + Advisor models
+/advisor-settings   # behaviour, context, privacy, limits
 ```
 
-Config toàn cục ở **`~/.pi/agent/advisor.json`** — nằm ở **gốc** config dir, **không** trong `extensions/`, nên backup phải liệt kê riêng (đã làm). Project có thể override bằng `<project>/.pi/advisor.json`.
+Global config is **`~/.pi/agent/advisor.json`** — at the **root** of the config dir, **not** inside `extensions/`, so backup has to list it separately (it does). A project can override it with `<project>/.pi/advisor.json`.
 
-Extension này còn công bố 2 status key (`advisor-scout`, `advisor-usage`) — đã được đưa vào `hiddenKeys` + widget inline như 9 key kia, để hàng status không quay lại khi Advisor đang chạy.
+The extension also publishes 2 status keys (`advisor-scout`, `advisor-usage`) — both are in `hiddenKeys` and have inline widgets like the other 9, so the status row does not come back while the Advisor runs.
 
-State riêng của nó (`advisor-outcomes.jsonl`, `advisor-outcomes-salt`) là log/salt theo máy → đã cho vào `.pi-setup-exclude`, không lên repo.
+Its own state (`advisor-outcomes.jsonl`, `advisor-outcomes-salt`) is a per-machine log/salt → excluded via `.pi-setup-exclude`, never committed.
 
 ---
 
 ## `@tmustier/pi-session-recap`
 
-Recap **“while you were away”** (theo mẫu away-summary của Claude Code): khi bạn thật sự rời session một lúc, extension soạn sẵn một bản tóm tắt ngắn — việc lớn đang làm trước, rồi bước tiếp theo cụ thể — và đặt ở cuối transcript (TUI thường thì nằm trên editor) để bạn đọc ngay khi quay lại. Làm cho workflow nhiều agent chạy song song ở nhiều tab.
+A **“while you were away”** recap (in the spirit of Claude Code's away-summary): when you have genuinely stepped away from a session, the extension drafts a short summary — the main thing in flight first, then the concrete next step — and places it at the end of the transcript (in the TUI, above the editor) so you can read it the moment you return. Built for workflows with many agents across many tabs.
 
-**Không có file config hay state nào** — extension thuần stateless, không đọc/ghi gì trong `~/.pi/agent/`, nên không cần thêm gì vào danh sách backup.
+**No config or state files** — a purely stateless extension that reads/writes nothing under `~/.pi/agent/`, so nothing extra needs backing up.
 
-Nó vẫn công bố 1 status key (`session-recap`, hiện `✦ drafting recap…` lúc đang soạn) → đã vào `hiddenKeys` + có widget inline, để statusline không nhảy lên hàng 4 trong lúc recap đang soạn.
+It still publishes 1 status key (`session-recap`, showing `✦ drafting recap…` while drafting) → included in `hiddenKeys` with an inline widget, so the statusline does not jump to 4 rows while a recap is being written.
 
-> Nếu dùng tmux, cần `set -g focus-events on` trong `~/.tmux.conf` rồi `tmux source-file ~/.tmux.conf` để extension biết bạn đã quay lại.
+> With tmux you need `set -g focus-events on` in `~/.tmux.conf` followed by `tmux source-file ~/.tmux.conf` so the extension knows you came back.
 
 ---
 
 ## `pi-lens` (LSP)
 
-Bật LSP cho pi. `pi` không có LSP built-in — không có setting, không có docs — nên đây phải là extension. `pi-lens` được chọn vì nhiều tính năng hơn và phổ biến hơn hẳn (`@narumitw/pi-lsp` chỉ có LSP, ít dùng hơn ~9 lần), **và** lý do bạn gỡ nó hôm trước — nó hiện danh sách file trên màn hình — tắt được bằng **một dòng config**.
+LSP for pi. pi has no built-in LSP — no setting, no docs — so it has to be an extension. `pi-lens` was chosen because it has more features and is far more widely used (`@narumitw/pi-lsp` is LSP-only and ~9× less used), **and** because the thing that made me remove it earlier — it lists files on screen — can be switched off with **one config line**.
 
-Phần gây khó chịu là **widget** (`setWidget("pi-lens", …)`, hiện findings theo từng file phía trên editor), không phải statusline. Nó có setting `widget.visible`:
+The annoying part is the **widget** (`setWidget("pi-lens", …)`, showing per-file findings above the editor), not the statusline. It has a `widget.visible` setting:
 
 ```json
-// ~/.pi-lens/config.json  —  LƯU Ý: nằm ở ~/.pi-lens/, KHÔNG phải ~/.pi/agent/
+// ~/.pi-lens/config.json  —  NOTE: lives in ~/.pi-lens/, NOT ~/.pi/agent/
 {
   "lsp": { "enabled": true },
   "widget": { "visible": false },
@@ -431,175 +435,175 @@ Phần gây khó chịu là **widget** (`setWidget("pi-lens", …)`, hiện find
 }
 ```
 
-`format` và `autofix` tôi để **false** vì bạn chỉ xin LSP — mặc định của package là `true`, tức nó tự format và tự apply quickfix vào code bạn sửa. Muốn bật lại thì đổi thành `true` (hoặc dùng CLI flag `--no-autofix` / `--no-autoformat` để tắt, `--lens-actionable-warnings --lens-actionable-warning-autofix` để bật thêm cảnh báo).
+`format` and `autofix` are set to **false** here because only LSP was requested — the package defaults them to `true`, meaning it formats and applies quickfixes to the code you edit. Set them back to `true` to re-enable (or use the CLI flags `--no-autofix` / `--no-autoformat` to disable, and `--lens-actionable-warnings --lens-actionable-warning-autofix` to enable extra warnings).
 
-Statusline: extension này công bố key `pi-lens-lsp` (giá trị kiểu `LSP Active: ts` / `LSP Inactive`) → đã vào `hiddenKeys` + có widget inline, nên bạn **thấy được LSP có chạy hay không** mà statusline vẫn 3 hàng.
+Statusline: the extension publishes the key `pi-lens-lsp` (values like `LSP Active: ts` / `LSP Inactive`) → in `hiddenKeys` with an inline widget, so you **can see whether LSP is running** while the statusline stays 3 rows.
 
-Mặc định giá trị đó liệt kê tên server (`LSP Active: typescript, jsonc, …`) và pi-lens **không có** config nào cho dòng này, nên repo này rút gọn nó bằng một **bản vá bundle**: `LSP ✓` (xanh) khi có server, `LSP ✗` (đỏ) khi có server lỗi, `LSP ✗` (mờ) khi không có — khi vừa có server chạy vừa có server lỗi thì hiện `LSP ✓ · LSP ✗` (giữ nguyên ngữ nghĩa của bản gốc). Chạy lại sau mỗi lần `pi update`:
+By default that value lists the server names (`LSP Active: typescript, jsonc, …`) and pi-lens has **no** config for it, so this repo compacts it with a **bundle patch**: `LSP ✓` (green) when servers are alive, `LSP ✗` (red) when one failed, `LSP ✗` (dim) when none — with both alive and failed servers it shows `LSP ✓ · LSP ✗`, keeping the original two-state semantics. Re-run after every `pi update`:
 
 ```bash
-node scripts/pi-lens-compact-lsp-status.mjs           # vá (no-op nếu đã vá)
-node scripts/pi-lens-compact-lsp-status.mjs --check   # chỉ báo trạng thái
-node scripts/pi-lens-compact-lsp-status.mjs --revert  # trả về nguyên bản
+node scripts/pi-lens-compact-lsp-status.mjs           # patch (no-op if already patched)
+node scripts/pi-lens-compact-lsp-status.mjs --check   # report state only
+node scripts/pi-lens-compact-lsp-status.mjs --revert  # restore the original bundle
 ```
 
-Config của nó nằm **ngoài** config dir của pi, nên `scripts/pi-setup-backup.sh` có cơ chế riêng cho nhóm này: xem mục *Config nằm ngoài config dir* bên dưới.
+Its config lives **outside** pi's config dir, which is why `scripts/pi-setup-backup.sh` has a dedicated mechanism for that group: see *Config that lives outside the config dir* above.
 
 ---
 
 ## Scripts
 
-Hai script setup **không hỏi xác nhận** — chạy được trong script/CI. Rủi ro xử lý bằng snapshot + cảnh báo ra `stderr`. Script thứ ba chỉ **đọc**; script thứ tư sửa **một file** trong bundle pi-lens đã cài (rút gọn dòng status LSP).
+The two setup scripts **never ask for confirmation** — they are safe to run from scripts/CI. Risk is handled with snapshots plus warnings on `stderr`. The third script only **reads**; the fourth edits one file inside the installed pi-lens bundle.
 
 ### `pi-setup-verify-advisor.mjs`
 
-`pi-advisor-flow` không báo lỗi khi gặp key lạ trong `advisor.json`: nó giữ nguyên key đó rồi chỉ notify `contains unrecognized key(s) ... They were preserved but ignored` — và giá trị của key đó **không có hiệu lực**. Một key viết sai tên vì thế trông như đã cấu hình mà thật ra không làm gì.
+`pi-advisor-flow` does not error on an unknown key in `advisor.json`: it keeps the key and only notifies `contains unrecognized key(s) ... They were preserved but ignored` — and that key has **no effect**. A misspelled key therefore looks configured while doing nothing.
 
-Script này trích `CONFIG_SCHEMA` từ chính bundle đang cài rồi mô phỏng hai kiểm tra mà extension chạy lúc load: `unknownConfigKeys()` (key lạ → bị ignore) và `validate*Values()` (sai type / ngoài enum).
+This script extracts `CONFIG_SCHEMA` from the installed bundle and replays the two checks the extension runs while loading: `unknownConfigKeys()` (unknown key → ignored) and `validate*Values()` (wrong type / outside an enum).
 
 ```bash
-node scripts/pi-setup-verify-advisor.mjs            # file trong repo (config/advisor.json)
-node scripts/pi-setup-verify-advisor.mjs --live     # + file đang chạy ~/.pi/agent/advisor.json, và so 2 file
+node scripts/pi-setup-verify-advisor.mjs            # the file in this repo (config/advisor.json)
+node scripts/pi-setup-verify-advisor.mjs --live     # + the live ~/.pi/agent/advisor.json, and compares the two
 node scripts/pi-setup-verify-advisor.mjs --file <path>
 ```
 
-| Exit | Nghĩa |
+| Exit | Meaning |
 |---|---|
-| `0` | sạch |
-| `1` | config sai: key lạ, sai type, ngoài enum, JSON hỏng, thiếu file, snapshot lệch bản đang chạy |
-| `2` | lỗi môi trường: không thấy bundle `pi-advisor-flow`, bundle đổi định dạng, tham số sai |
+| `0` | clean |
+| `1` | bad config: unknown key, wrong type, outside enum, unparsable JSON, missing file, repo snapshot diverged from the live file |
+| `2` | environment problem: no `pi-advisor-flow` bundle, bundle changed format, bad arguments |
 
-> Vì sao cần: tôi từng viết `advisorFailureMode` (lấy từ tên biến nội bộ trong bundle) trong khi key thật là `gateFailureMode` — file trông đúng, **không** có tác dụng, và mãi sau mới thấy warning. Script này bắt đúng lớp lỗi đó (xem bảng Kiểm chứng).
+> Why it exists: I once wrote `advisorFailureMode` (taken from an internal variable name in the bundle) when the real key is `gateFailureMode` — the file looked right, did **nothing**, and the warning showed up much later. This script catches exactly that class of mistake.
 
 ### `pi-lens-compact-lsp-status.mjs`
 
-pi-lens hardcode dòng status LSP trong bundle (`updateLspStatus`): `` `LSP Active: ${activeIds.join(", ")}` ``, `` `LSP Failed: ${failedIds.join(", ")}` ``, `"LSP Inactive"`. Không có key config nào cho dòng này (`~/.pi-lens/config.json` chỉ có `lsp.enabled`, `widget.visible`, `format.enabled`, `autofix.enabled`, `ui.compactToolLine`, `actionableWarnings.*`), và extension khác cũng không sửa hộ được: `ctx.ui` chỉ có `setStatus` (ghi), còn `footerData.getExtensionStatuses()` chỉ tồn tại **bên trong** footer renderer — mà footer đang do `pi-footer` nắm (`setFooter` last-wins), nên widget `Pi Extension Status` chỉ render nguyên văn (option `trimValue` của nó cắt phần **đầu**, không đụng được danh sách server ở đuôi).
+pi-lens hardcodes the LSP status line in its bundle (`updateLspStatus`): `` `LSP Active: ${activeIds.join(", ")}` ``, `` `LSP Failed: ${failedIds.join(", ")}` ``, `"LSP Inactive"`. There is no config key for it (`~/.pi-lens/config.json` only has `lsp.enabled`, `widget.visible`, `format.enabled`, `autofix.enabled`, `ui.compactToolLine`, `actionableWarnings.*`), and no other extension can fix it either: `ctx.ui` only exposes `setStatus` (write-only), while `footerData.getExtensionStatuses()` exists **only inside** a footer renderer — and `pi-footer` owns the footer (`setFooter` is last-wins), so its `Pi Extension Status` widget just renders the raw value (its `trimValue` option trims the **leading** part, so it cannot touch the trailing server list).
 
-Script vá đúng 3 chuỗi đó, mỗi chuỗi phải khớp **đúng 1 lần**:
+The script replaces exactly those three strings, and each one must match **exactly once**:
 
 ```bash
-node scripts/pi-lens-compact-lsp-status.mjs           # vá (no-op nếu đã vá)
-node scripts/pi-lens-compact-lsp-status.mjs --check   # chỉ báo trạng thái, không ghi
-node scripts/pi-lens-compact-lsp-status.mjs --revert  # trả bundle về nguyên bản
+node scripts/pi-lens-compact-lsp-status.mjs           # patch (no-op if already patched)
+node scripts/pi-lens-compact-lsp-status.mjs --check   # report state only, no write
+node scripts/pi-lens-compact-lsp-status.mjs --revert  # restore the original bundle
 ```
 
-| Exit | Nghĩa |
+| Exit | Meaning |
 |---|---|
-| `0` | đã vá / vừa vá xong / vừa revert xong |
-| `1` | chưa vá (khi `--check`) hoặc bundle khác định dạng → **không** tự sửa |
-| `2` | lỗi môi trường (không thấy bundle pi-lens, tham số sai) |
+| `0` | patched / just patched / just reverted |
+| `1` | not patched (with `--check`) or an unrecognised bundle → it does **not** guess |
+| `2` | environment problem (pi-lens bundle not found, bad arguments) |
 
-> ⚠ npm ghi đè `pi-lens/dist/index.js` mỗi lần `pi update` hoặc cài lại pi-lens → **chạy lại script này**. Đó là lý do một script vá nằm trong repo snapshot. Đã gửi đề xuất upstream xin option chính thức cho dòng status này.
+> ⚠ npm overwrites `pi-lens/dist/index.js` on every `pi update` or pi-lens reinstall → **re-run this script**. That is why a patch script lives in this snapshot repo. An upstream request for a first-class option is filed.
 
 ### `pi-setup-backup.sh`
 
-Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models-store.json`, `model-fallback/config.json`, `extensions/` — và **luôn lấy cả statusline** (`extensions/pi-footer.json` nằm trong `extensions/`).
+By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models-store.json`, `model-fallback/config.json`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`).
 
 ```bash
-./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (chỉ setup)
-./scripts/pi-setup-backup.sh --config-dir config    # → cập nhật config/ trong repo này
-./scripts/pi-setup-backup.sh --skills --hooks       # thêm skills + hooks
+./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (setup only)
+./scripts/pi-setup-backup.sh --config-dir config    # → update config/ inside this repo
+./scripts/pi-setup-backup.sh --skills --hooks       # add skills + hooks
 ./scripts/pi-setup-backup.sh -o ~/Desktop/pi.tar.gz
 ./scripts/pi-setup-backup.sh --dry-run
 ```
 
-| Opt-in (mặc định **không** lấy) | Lấy gì | Ghi chú |
+| Opt-in (NOT included by default) | What it takes | Notes |
 |---|---|---|
-| `--auth` | `auth.json` | ⚠ **chứa credential** → không đưa lên nơi công khai |
-| `--skills` | `skills/` | **dereference symlink** → backup tự chứa (~24 MB, 108 skill) |
-| `--hooks` | thư mục `hooks/` trong `~/.pi/agent` | hiện tại: 544 KB. **Không** đụng `~/.claude/hooks` (ở đó có `.env`). Ghi đè `.pi-setup-exclude` cho đường dẫn hooks |
+| `--auth` | `auth.json` | ⚠ **contains credentials** → never publish the artifact |
+| `--skills` | `skills/` | **dereferences symlinks** → self-contained backup (~24 MB, 108 skills) |
+| `--hooks` | `hooks/` dirs under `~/.pi/agent` | currently 544 KB. Does **not** touch `~/.claude/hooks` (that one holds `.env`). Overrides `.pi-setup-exclude` for hook paths |
 | `--memory` | `memory/` | |
-| `--missions` | `missions/` | ⚠ state pi-goal-x, có thể chứa tên project/khách hàng |
-| `--sessions` | `sessions/` | lịch sử chat (~56 MB) |
+| `--missions` | `missions/` | ⚠ pi-goal-x state, may contain project/customer names |
+| `--sessions` | `sessions/` | chat history (~56 MB) |
 | `--with-state` | `--skills --memory --missions` | |
 
-| Opt-out | Tác dụng |
+| Opt-out | Effect |
 |---|---|
-| `--no-statusline` | **Không** backup cấu hình statusline (`pi-footer.json`, `powerline-footer/theme.json`) — máy mới sẽ dùng layout mặc định |
+| `--no-statusline` | Does **not** back up the statusline config (`pi-footer.json`, `powerline-footer/theme.json`) — a new machine keeps the default layout |
 
-Script tự: ghi file tạm rồi `mv` (không để lại artifact hỏng khi bị ngắt) · **quét secret** (`sk-*`, `ghp_*`, `xox*`, `BEGIN PRIVATE KEY` có thân base64, `api_key=…`) · **cảnh báo symlink trỏ ra ngoài** · **báo cáo config extension** (statusline / model-fallback có được backup hay không) · nén deterministic (`gzip -n` → cùng nội dung cho cùng SHA-256) · từ chối ghi `--config-dir` vào `$HOME`, `/`, hoặc chính config dir của pi.
+The script also: writes to a temp file then `mv`s it (no corrupt artifact on interruption) · **scans for secrets** (`sk-*`, `ghp_*`, `xox*`, `BEGIN PRIVATE KEY` with a base64 body, `api_key=…`) · **warns about symlinks pointing outside** · **reports extension config** (whether statusline / model-fallback were backed up) · compresses deterministically (`gzip -n` → same content, same SHA-256) · refuses to write `--config-dir` into `$HOME`, `/`, or pi's own config dir.
 
-> Về quét secret: script bỏ qua placeholder phổ biến (giá trị thuần chữ như `currentPassword`, dạng `{CLIENT_SECRET}`, PEM header không có thân, entropy thấp như `ghp_aaaa…`). Vẫn có thể báo **fixture trong test của chính package** (VD một chuỗi kiểu Slack token trong test của chính AgentKit) và **chuỗi test bạn từng dán vào chat** (khi dùng `--sessions`, vì transcript nằm trong `sessions/`) — đọc tên file trước khi kết luận.
+> On secret scanning: the script ignores common placeholders (word-only values like `currentPassword`, `{CLIENT_SECRET}` forms, bare PEM headers, low-entropy strings like `ghp_aaaa…`). It can still flag **fixtures inside third-party package tests** (e.g. a Slack-token-shaped string in AgentKit's own tests) and **test strings you once pasted into chat** (with `--sessions`, since transcripts live under `sessions/`) — read the filenames before concluding.
 
 ### `pi-setup-restore.sh`
 
-| Tùy chọn | Tác dụng |
+| Option | Effect |
 |---|---|
-| `--from-config DIR` | restore từ `config/` (plain file) |
-| `--bundle FILE` | restore từ `.tar.gz` |
-| `--target DIR` | đích khác `~/.pi/agent` |
-| `--scratch` | đích là thư mục tạm — **an toàn để thử** |
-| `--install` | chạy pi headless 1 lần để tự cài extension (~150–190 s) |
-| `--verify` | so số extension đã cài với `settings.json` |
-| `--with-trust` | copy cả `trust.json` |
-| `--dry-run` | chỉ in ra, không ghi |
+| `--from-config DIR` | restore from `config/` (plain files) |
+| `--bundle FILE` | restore from a `.tar.gz` |
+| `--target DIR` | a target other than `~/.pi/agent` |
+| `--scratch` | target a temp dir — **safe to rehearse** |
+| `--install` | run pi headless once so it installs the extensions (~150–190 s) |
+| `--verify` | compare installed extension count against `settings.json` |
+| `--with-trust` | also copy `trust.json` |
+| `--dry-run` | print only, write nothing |
 
-Trước khi ghi đè, `settings.json` **và** `auth.json` (nếu nguồn có) được snapshot thành `*.bak.<timestamp>`. Script có `trap ERR` nên không bao giờ thoát im lặng — luôn in số dòng khi gặp lỗi ngoài dự kiến. Sau khi restore, script in thêm **bước 4**: trạng thái vá dòng status LSP của pi-lens ở đích vừa restore (chỉ báo, không tự sửa package bên thứ ba).
+Before overwriting, `settings.json` **and** `auth.json` (when present in the source) are snapshotted to `*.bak.<timestamp>`. The script sets `trap ERR`, so it never exits silently — it always prints the line number on unexpected errors. After a restore it also prints **step 4**: whether the pi-lens LSP status patch is in place in the restored target (informational only — it never mutates a third-party package).
 
 ---
 
-## Kiểm chứng
+## Verification
 
-Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CODING_AGENT_DIR`, không đụng setup thật.
+Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, never touching the real setup.
 
-> ⚠️ Mọi số đo dưới đây lấy trên payload **20 package**. Snapshot hiện tại là **22 package** (thêm `pi-browser-use`, `@injaneity/pi-computer-use`) nên **chưa được đo lại**.
+> ⚠️ Every number below was measured on the **20-package** payload. The current snapshot has **22 packages** (added `pi-browser-use` and `@injaneity/pi-computer-use`) and has **not been re-measured**.
 
-| Kiểm tra | Kết quả |
+| Check | Result |
 |---|---|
-| Thời gian cài lần đầu | **136–246 s** qua các lần chạy thật (tuỳ tốc độ npm; 335 s khi npm cache nguội) |
-| Module dirs trong `npm/node_modules` | **0 → 203** (snapshot 20 package) |
-| `--verify` | **20/20** ở lần chạy gần nhất (pi-lens + pi-todo + notify), **19/19 · 18/18 · 17/17 · 16/16** ở các snapshot trước |
-| Extension **thực sự chạy** (không chỉ cài) | ✅ 18 `extension_ui_request`, 0 lỗi load, đủ surface `subagent-async`, `mcp`, `goal`, `background-tasks`, `usage`, `pi-footer`, `advisor-scout`, `advisor-usage`, `pi-lens-lsp` |
-| Config **ngoài** config dir được restore | ✅ ghi đúng `~/.pi-lens/config.json` (snapshot bản cũ trước khi ghi đè) |
-| Restore từ **bundle mới** vào `HOME` giả | ✅ 9 file, config ngoài ghi đúng `<HOME>/.pi-lens/config.json`, nội dung khớp `config/pi-lens-config.json` |
-| Artifact trùng basename legacy của pi-lens | ✅ đổi `config/pi-lens.json` → `pi-lens-config.json`: repro với cwd=`config/` **6 → 12** warning `PILENS_CFG_0003/0001` trước khi sửa, **delta 0** sau khi sửa, resolution `documents=1 legacy=0 records=0` |
-| Clone repo public rồi restore | ✅ 11 file, 0 file bị loại, 153 s, verify khớp, 0 lỗi |
-| `auth.json` trong dir mới | `{}` → không rò secret |
-| Chạy lần 2 | log rỗng → idempotent |
-| Backup 2 lần liên tiếp | **byte-identical** (deterministic) |
-| `context-bar` render | ✅ gọi trực tiếp `render()`: 0/25/**71%→vàng**/**92%→đỏ**/100%, scale đúng theo 200k và 1m |
-| `--no-statusline` | ✅ `pi-footer.json` biến mất khỏi bundle (SHA khác bản mặc định) |
-| `--hooks` + `.pi-setup-exclude` | ✅ hooks sống sót, in cảnh báo "ghi đè", 54 file còn lại |
-| `--auth` khi restore | ✅ có `auth.json.bak.<ts>` giữ credential cũ trước khi ghi đè |
+| First install time | **136–246 s** across real runs (npm-speed dependent; 335 s with a cold npm cache) |
+| Module dirs in `npm/node_modules` | **0 → 203** (20-package snapshot) |
+| `--verify` | **20/20** on the latest run (pi-lens + pi-todo + notify), **19/19 · 18/18 · 17/17 · 16/16** on earlier snapshots |
+| Extensions **actually running** (not just installed) | ✅ 18 `extension_ui_request`, 0 load errors, surfaces for `subagent-async`, `mcp`, `goal`, `background-tasks`, `usage`, `pi-footer`, `advisor-scout`, `advisor-usage`, `pi-lens-lsp` |
+| Config **outside** the config dir restored | ✅ written to `~/.pi-lens/config.json` (old file snapshotted first) |
+| Restore from the **new bundle** into a fake `HOME` | ✅ 9 files, external config written to the right place, contents match `config/pi-lens-config.json` |
+| pi-lens legacy-basename collision | ✅ `config/pi-lens.json` → `pi-lens-config.json`: repro with cwd=`config/` went **6 → 12** `PILENS_CFG_0003/0001` warnings before the fix, **delta 0** after, resolution `documents=1 legacy=0 records=0` |
+| Clone the public repo and restore | ✅ 11 files, 0 excluded, 153 s, verify matched, 0 errors |
+| `auth.json` in the new dir | `{}` → no secret leakage |
+| Second run | empty log → idempotent |
+| Two consecutive backups | **byte-identical** (deterministic) |
+| `context-bar` rendering | ✅ direct `render()` call: 0/25/**71%→yellow**/**92%→red**/100%, correctly scaled for 200k and 1M |
+| `--no-statusline` | ✅ `pi-footer.json` disappears from the bundle (different SHA than the default) |
+| `--hooks` + `.pi-setup-exclude` | ✅ hooks survive, "override" warning printed, 54 files remain |
+| `--auth` on restore | ✅ `auth.json.bak.<ts>` preserves the old credentials before overwriting |
 
-### Windows 11 + Git Bash (MSYS2, bash 5.3) — đo trên payload 20 package
+### Windows 11 + Git Bash (MSYS2, bash 5.3) — measured on the 20-package payload
 
-| Kiểm tra | Kết quả |
+| Check | Result |
 |---|---|
-| Restore thật (`--from-config config --install --verify`) | ✅ **20/20**, cài **88 s**, module dirs `0 → 203` |
-| `pi list` trong bản restore | ✅ 20 package |
-| Config **ngoài** config dir | ✅ ghi đúng `%USERPROFILE%\.pi-lens\config.json`, nội dung khớp `config/pi-lens-config.json` |
-| Restore từ bundle vào `HOME` giả | ✅ 9 file, config ngoài ghi đúng |
-| MSYS convert path cho `pi` con | ✅ `PI_CODING_AGENT_DIR=/tmp/...` → `C:/Users/.../Temp/...` |
-| Tạo lại bundle trên Windows | ✅ 9 file, 7.9 KB, sạch (không còn `._*` AppleDouble như bản tạo trên macOS) |
-| Đếm package không cần `python3` | ✅ `node -e` → `20` |
-| CRLF trong script | ✅ bash 5.3.15 chịu CRLF (test bằng bản copy CRLF, exit 0) |
+| Real restore (`--from-config config --install --verify`) | ✅ **20/20**, install **88 s**, module dirs `0 → 203` |
+| `pi list` in the restored dir | ✅ 20 packages |
+| Config **outside** the config dir | ✅ written to `%USERPROFILE%\.pi-lens\config.json`, matching `config/pi-lens-config.json` |
+| Restore from a bundle into a fake `HOME` | ✅ 9 files, external config written correctly |
+| MSYS path conversion for child `pi` | ✅ `PI_CODING_AGENT_DIR=/tmp/...` → `C:/Users/.../Temp/...` |
+| Bundle rebuilt on Windows | ✅ 9 files, 7.9 KB, clean (no `._*` AppleDouble junk like the macOS-built one) |
+| Package counting without `python3` | ✅ `node -e` → `20` |
+| CRLF in scripts | ✅ bash 5.3.15 tolerates CRLF (tested with a CRLF copy, exit 0) |
 
-### Script verify (`advisor.json`)
+### Verify script (`advisor.json`)
 
-| Kiểm tra | Kết quả |
+| Check | Result |
 |---|---|
-| Ma trận config (chạy thật, so exit code) | ✅ **6/6**: config sạch `0` · key lạ `1` · ngoài enum `1` · sai type `1` · ref thiếu `provider/model` `1` · thiếu `gateFailureMode` vẫn `0` |
-| Nhánh môi trường | ✅ **7/7**: `--live` so 2 file `0` · `--pkg` không tồn tại `2` · bundle không có `CONFIG_SCHEMA` `2` · `--help` `0` · tham số sai `2` · JSON hỏng `1` · file thiếu `1` |
-| Trích schema | ✅ **31 key** từ `CONFIG_SCHEMA` của bundle 0.6.0; bắt đúng `advisorFailureMode` — key mà extension từng cảnh báo (harness khớp output thật) |
+| Config matrix (real runs, exit codes compared) | ✅ **6/6**: clean config `0` · unknown key `1` · outside enum `1` · wrong type `1` · ref missing `provider/model` `1` · missing `gateFailureMode` still `0` |
+| Environment branches | ✅ **7/7**: `--live` compares both files `0` · missing `--pkg` `2` · bundle without `CONFIG_SCHEMA` `2` · `--help` `0` · bad argument `2` · unparsable JSON `1` · missing file `1` |
+| Schema extraction | ✅ **31 keys** from the 0.6.0 bundle's `CONFIG_SCHEMA`; reproduces the exact `advisorFailureMode` notice the extension emitted (harness matched real output) |
 
 ---
 
-## Giới hạn đã biết
+## Known limitations
 
-- **`auth.json` không nằm trong repo** (secret) → `/login` lại ở máy mới.
-- **`sessions/` và `missions/` không nằm trong repo** → không migrate lịch sử chat/mission. Dùng `--sessions` / `--missions` để tự backup riêng.
-- **2 skill là symlink sang AgentKit** (`skills/orchestration`, `skills/orca-per-workspace-env`) → chỉ chạy nếu máy mới cài [AgentKit](https://github.com/bestagentkits). Gãy 2 symlink này **không** ảnh hưởng extension nào khác (đã test). Dùng `--skills` để backup kèm nội dung thật.
-- **3 extension `orca-*.ts`** và **2 thư mục `agentkit-*`** không nằm trong repo → Orca/AgentKit tự sinh lại.
-- **`pi-model-fallback` config** ở `~/.pi/agent/model-fallback/config.json` — **cùng thư mục** với `state.json`, mà `state.json` là state theo máy (entry + mốc cooldown) nên **không** được backup. Script liệt kê riêng đúng file config. Chưa có file thì extension chạy bằng default của package (`zai` → `deepseek/deepseek-v4-flash`).
-- **`pi-advisor-flow` config** (`~/.pi/agent/advisor.json`, nằm ở **gốc** config dir chứ không trong `extensions/`) chỉ tồn tại sau khi chạy `/advisor` hoặc `/advisor-settings`. Backup đã liệt kê riêng file này nên sẽ tự kèm khi nó xuất hiện.
-- **Script cần shell POSIX** → trên Windows phải chạy trong **Git Bash** hoặc **WSL**; PowerShell/cmd không chạy được script này.
-- **Icon statusline cần Nerd Font** → dùng JetBrains Mono **gốc** trong `fonts/` sẽ làm icon vỡ thành ◆/✦/`?`; xem [Font terminal](#font-terminal-bắt-buộc-nerd-font).
-- **`pi` cài global theo từng Node version** → `nvm use` / `fnm use` sang version khác có thể làm mất lệnh `pi`; cài lại global cho version đó.
-- **Dòng status LSP của `pi-lens` là bản vá bundle**, không phải config → `pi update` ghi đè mất; chạy lại `node scripts/pi-lens-compact-lsp-status.mjs` (script tự dừng với exit `1` nếu pi-lens đổi định dạng hàm, không sửa mù).
+- **`auth.json` is not in the repo** (secret) → `/login` again on the new machine.
+- **`sessions/` and `missions/` are not in the repo** → chat/mission history is not migrated. Use `--sessions` / `--missions` to back them up yourself.
+- **2 skills are symlinks into AgentKit** (`skills/orchestration`, `skills/orca-per-workspace-env`) → they only work if the new machine has [AgentKit](https://github.com/bestagentkits) installed. Broken symlinks there affect **no** other extension (tested). Use `--skills` to back up the real content.
+- **3 `orca-*.ts` extensions** and **2 `agentkit-*` directories** are not in the repo → Orca/AgentKit regenerate them.
+- **`pi-model-fallback` config** lives at `~/.pi/agent/model-fallback/config.json` — the **same directory** as `state.json`, and `state.json` is machine state (entries + cooldown deadlines) so it is **not** backed up. The script lists the config file explicitly. Without that file the extension runs on the package default (`zai` → `deepseek/deepseek-v4-flash`).
+- **`pi-advisor-flow` config** (`~/.pi/agent/advisor.json`, at the config-dir **root** rather than inside `extensions/`) only exists after running `/advisor` or `/advisor-settings`. Backup lists that file explicitly, so it is included automatically once it appears.
+- **The scripts need a POSIX shell** → on Windows run them in **Git Bash** or **WSL**; PowerShell/cmd cannot run them.
+- **Statusline icons need a Nerd Font** → using the unpatched JetBrains Mono from `fonts/` breaks icons into ◆/✦/`?`; see [Terminal font](#terminal-font-nerd-font-required).
+- **`pi` installs globally per Node version** → `nvm use` / `fnm use` to a different version can make the `pi` command disappear; reinstall it globally for that version.
+- **The `pi-lens` LSP status line is a bundle patch**, not config → `pi update` overwrites it; re-run `node scripts/pi-lens-compact-lsp-status.mjs` (the script stops with exit `1` if pi-lens changes the shape of that function instead of guessing).
 
 ---
 
-## Repo cá nhân
+## Personal repo
 
-Đây là bản chụp setup của máy cá nhân tại một thời điểm, **không phải sản phẩm chính thức** của pi hay của bất kỳ package nào được liệt kê. Không kèm giấy phép — mọi quyền thuộc về tác giả; các extension bên thứ ba thuộc giấy phép của chúng.
+This is a snapshot of one person's setup at a point in time — **not an official product** of pi or of any package listed here. No license is included: all rights belong to the author; third-party extensions remain under their own licenses.

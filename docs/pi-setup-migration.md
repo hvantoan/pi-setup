@@ -70,7 +70,8 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 
 ```
 zuey-pi-setup/
-├── README.md
+├── README.md                        English README (bản mặc định, GitHub hiển thị)
+├── README.vi.md                     README tiếng Việt
 ├── .gitattributes                   ← giữ LF cho *.sh (tránh CRLF khi clone trên Windows)
 ├── docs/
 │   └── pi-setup-migration.md        ← file này (hướng dẫn chi tiết)

@@ -81,7 +81,7 @@ Windows: tải `.otf`/`.ttf` (bản **Mono**) từ <https://www.nerdfonts.com/fo
 
 **2) Không muốn cài font patch:** đổi `iconMode` sang `emoji` (dùng 📁… — trên Windows render bằng Segoe UI Emoji, không cần font patch) hoặc `text` (chữ thuần). Đổi lại: icon to hơn, statusline kém gọn.
 
-Xem thêm bảng đối chiếu font ↔ codepoint trong [`../README.md`](../README.md#font-terminal-bắt-buộc-nerd-font).
+Xem thêm bảng đối chiếu font ↔ codepoint trong [`../README.vi.md`](../README.vi.md#font-terminal-bắt-buộc-nerd-font).
 
 ## License
 
