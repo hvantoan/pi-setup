@@ -16,7 +16,7 @@ cd zuey-pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
 ```
 
-Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 20 extensions.
+Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 22 extensions.
 
 **Không cần** copy thư mục `npm/` (244 MB cache) hay `auth.json` (secret).
 
@@ -42,7 +42,7 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 
 | Mục trong `~/.pi/agent/` | Size | Vào repo? | Lý do |
 |---|---|---|---|
-| `settings.json` | 4 KB | ✅ **bắt buộc** | 20 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
+| `settings.json` | 4 KB | ✅ **bắt buộc** | 22 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
 | `extensions/` | 1.3 MB | ✅ (lọc) | extension tự viết local + config của chúng. `orca-*.ts` (Orca sinh) và `agentkit-*` (AgentKit sinh) bị loại — xem `.pi-setup-exclude` |
 | `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
@@ -131,7 +131,7 @@ Script sẽ:
 
 1. Snapshot `settings.json` hiện có thành `settings.json.bak.<YYYYmmdd-HHMMSS>` (nếu đã tồn tại),
 2. Copy 4 mục setup vào `~/.pi/agent`,
-3. Chạy pi headless 1 lần → pi tự cài 20 extension (~150–220 s; **88 s** trên Windows + Git Bash),
+3. Chạy pi headless 1 lần → pi tự cài 22 extension (~150–220 s; **88 s** trên Windows + Git Bash),
 4. Verify số extension khớp với `settings.json`.
 
 ## Bước 3 — login lại provider
@@ -305,7 +305,7 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | `auth.json` trong dir mới | `{}` → **không rò secret** |
 | Chạy lần 2 | log rỗng (0 byte) → **idempotent** |
 
-### Đường `--from-config config` (payload hiện tại — 20 package)
+### Đường `--from-config config` (payload 20 package lúc đo — 2026-09-15; snapshot hiện tại là 22 package, **chưa đo lại**)
 
 | Kiểm tra | Kết quả |
 |---|---|
@@ -468,7 +468,7 @@ loại trừ: 82 file khớp .pi-setup-exclude (extensions/orca-*.ts extensions/
 - [ ] **Windows:** đang ở trong **Git Bash** (không PowerShell/cmd)
 - [ ] `git clone https://github.com/mrgoonie/zuey-pi-setup.git`
 - [ ] `./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify` (thử an toàn)
-- [ ] `./scripts/pi-setup-restore.sh --install --verify` → phải ra `20/20 extension khớp`
+- [ ] `./scripts/pi-setup-restore.sh --install --verify` → phải ra `22/22 extension khớp`
 - [ ] **Windows/font:** terminal đã dùng **Nerd Font** (bản Mono) hoặc `iconMode` đã đổi sang `emoji`/`text` — nếu không, icon statusline sẽ vỡ
 - [ ] `/login` cho `opencode-go`, `deepseek`, `openai-codex`
 - [ ] `pi auth check --provider opencode-go` → OK

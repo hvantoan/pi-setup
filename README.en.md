@@ -2,9 +2,9 @@
 
 # zuey-pi-setup
 
-**A portable snapshot of my [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 20 extensions on a new machine.**
+**A portable snapshot of my [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 22 extensions on a new machine.**
 
-pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-09-15
+pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-09-16
 
 [Tiếng Việt](./README.md) · **English**
 
@@ -46,6 +46,8 @@ Then log the providers back in (auth is not in the repo):
 ```bash
 pi auth check --provider opencode-go    # and /login inside pi for each provider
 ```
+
+One more manual step: `@injaneity/pi-computer-use` needs macOS **Accessibility** and **Screen Recording** granted to `~/Applications/pi-computer-use.app` (it installs the helper itself). Run pi interactively once and finish the setup prompt — in print mode the extension stays inert.
 
 Full details, copy/do-not-copy table, troubleshooting: **[`docs/pi-setup-migration.md`](./docs/pi-setup-migration.md)** (Vietnamese only).
 
@@ -122,7 +124,7 @@ zuey-pi-setup/
 │   └── pi-setup-portable.tar.gz     ready-to-download bundle (filtered — see below)
 └── config/                          setup snapshot (plain files, git-diffable)
     ├── .pi-setup-exclude           exclusion globs — backup honours this file
-    ├── settings.json               manifest of 20 packages + model/theme/compaction
+    ├── settings.json               manifest of 22 packages + model/theme/compaction
     ├── advisor.json                pi-advisor-flow config (at the config-dir root)
     ├── 99extensions.json           99percentpeople family config (todo namespace)
     ├── pi-lens-config.json          pi-lens config — lives in ~/.pi-lens/, OUTSIDE the config dir
@@ -198,7 +200,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-A ready-made bundle so you don't have to clone and run the backup yourself: **9 files** — `settings.json` (20 packages), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, and `extensions/provider-fallback.json`.
+A ready-made bundle so you don't have to clone and run the backup yourself: **9 files** — `settings.json` (22 packages), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, and `extensions/provider-fallback.json`.
 
 It is the script's full default bundle, **filtered** through `.pi-setup-exclude` so machine-only material never reaches this public repo:
 
@@ -207,11 +209,11 @@ It is the script's full default bundle, **filtered** through `.pi-setup-exclude`
 | `extensions/orca-*.ts` (3 files, 1,239 lines) | Orca-generated code — deliberately kept out of the public repo |
 | `extensions/agentkit-*` (95 files) | Contains `native-skill-paths.json` + `native-skill-hashes.json` (**absolute paths**, a list of 107 skills) and `hooks/.logs/hook-log.jsonl` (activity log) |
 
-Restoring this bundle yields **exactly** what `config/` yields (20 extensions + the statusline). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
+Restoring this bundle yields the same file set as `config/` — all 22 extensions plus the statusline. It is a snapshot of this machine, so its `settings.json` can differ from `config/settings.json` in keys changed afterwards (e.g. default model, TUI mode). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
 
 ---
 
-## The 20 extensions in this snapshot
+## The 22 extensions in this snapshot
 
 | # | Package | Version | What it does |
 |---|---|---|---|
@@ -235,6 +237,8 @@ Restoring this bundle yields **exactly** what `config/` yields (20 extensions + 
 | 18 | `pi-advisor-flow` | 0.6.0 | Executor/Advisor flow: a second opinion from a stronger model, with review gates before planning / after repeated failures / before declaring done |
 | 19 | `@tmustier/pi-session-recap` | 0.5.0 | "while you were away" recap: drafts a short summary when you leave a session and shows it at the end of the transcript / above the editor when you return. Built for many parallel agents |
 | 20 | `pi-lens` | 4.1.6 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
+| 21 | `pi-browser-use` | 0.11.7 | agent browser via `chrome-devtools-mcp` (not Playwright): Pi's own headless Chrome on a dedicated `~/.pi/browser-profile` (log in once with `browser_setup`), isolated `fresh` mode, `browser_*` tools plus the bundled `browser-policy` skill. Needs Node ≥ 24 and Chrome stable. Run `browser_doctor` for self-diagnostics |
+| 22 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
 
 > Versions are **for reference at snapshot time**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
@@ -494,6 +498,8 @@ Before overwriting, `settings.json` **and** `auth.json` (when present in the sou
 
 Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, never touching the real setup.
 
+> ⚠️ Every number below was measured on the **20-package** payload. The current snapshot has **22 packages** (added `pi-browser-use` and `@injaneity/pi-computer-use`) and has **not been re-measured**.
+
 | Check | Result |
 |---|---|
 | First install time | **136–246 s** across real runs (npm-speed dependent; 335 s with a cold npm cache) |
@@ -512,7 +518,7 @@ Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, n
 | `--hooks` + `.pi-setup-exclude` | ✅ hooks survive, "override" warning printed, 54 files remain |
 | `--auth` on restore | ✅ `auth.json.bak.<ts>` preserves the old credentials before overwriting |
 
-### Windows 11 + Git Bash (MSYS2, bash 5.3)
+### Windows 11 + Git Bash (MSYS2, bash 5.3) — measured on the 20-package payload
 
 | Check | Result |
 |---|---|

@@ -29,7 +29,9 @@
     "npm:@tmustier/pi-session-recap",
     "npm:pi-lens",
     "npm:@99percentpeople/pi-todo",
-    "npm:@pi-unipi/notify"
+    "npm:@pi-unipi/notify",
+    "npm:pi-browser-use",
+    "npm:@injaneity/pi-computer-use"
   ],
   "enabledModels": [
     "deepseek/deepseek-v4-flash",

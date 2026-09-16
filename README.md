@@ -2,9 +2,9 @@
 
 # zuey-pi-setup
 
-**Portable snapshot của setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 20 extensions trên máy mới.**
+**Portable snapshot của setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 22 extensions trên máy mới.**
 
-pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-15
+pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-16
 
 **Tiếng Việt** · [English](./README.en.md)
 
@@ -46,6 +46,8 @@ Sau đó login lại provider (auth không nằm trong repo):
 ```bash
 pi auth check --provider opencode-go    # và /login trong pi cho từng provider
 ```
+
+Thêm 1 bước tay: `@injaneity/pi-computer-use` cần cấp **Accessibility** và **Screen Recording** cho `~/Applications/pi-computer-use.app` (helper được cài tự động). Mở pi ở chế độ tương tác 1 lần và làm hết prompt setup — ở chế độ print, extension không hoạt động.
 
 Chi tiết đầy đủ, bảng copy/không-copy, xử lý sự cố: **[`docs/pi-setup-migration.md`](./docs/pi-setup-migration.md)**.
 
@@ -120,7 +122,7 @@ zuey-pi-setup/
 │   └── pi-setup-portable.tar.gz     bundle sẵn để tải (đã lọc — xem bên dưới)
 └── config/                          snapshot setup (plain file, diff được bằng git)
     ├── .pi-setup-exclude           glob loại trừ — backup tôn trọng file này
-    ├── settings.json               manifest 20 packages + model/theme/compaction
+    ├── settings.json               manifest 22 packages + model/theme/compaction
     ├── advisor.json                config pi-advisor-flow (ở gốc config dir)
     ├── 99extensions.json           config họ 99percentpeople (namespace todo)
     ├── pi-lens-config.json          config pi-lens — nằm ở ~/.pi-lens/ NGOÀI config dir
@@ -196,7 +198,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **9 file** — `settings.json` (20 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `extensions/provider-fallback.json`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **9 file** — `settings.json` (22 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `extensions/provider-fallback.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -205,11 +207,11 @@ Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **9 file** — `
 | `extensions/orca-*.ts` (3 file, 1 239 dòng) | code do Orca sinh — bạn đã chọn không đưa lên public |
 | `extensions/agentkit-*` (95 file) | chứa `native-skill-paths.json` + `native-skill-hashes.json` (**path tuyệt đối**, danh sách 107 skill) và `hooks/.logs/hook-log.jsonl` (log hoạt động) |
 
-Restore bundle này cho kết quả **giống hệt** `config/` (20 extension + statusline). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
+Restore bundle này cho cùng bộ file như `config/` — đủ 22 extension + statusline. Đây là snapshot của máy, nên `settings.json` trong bundle có thể khác `config/settings.json` ở những key bạn đổi sau đó (ví dụ model mặc định, TUI mode). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
 
 ---
 
-## 20 extensions trong snapshot
+## 22 extensions trong snapshot
 
 | # | Package | Version | Làm gì |
 |---|---|---|---|
@@ -233,6 +235,8 @@ Restore bundle này cho kết quả **giống hệt** `config/` (20 extension + 
 | 18 | `pi-advisor-flow` | 0.6.0 | flow Executor/Advisor: ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc |
 | 19 | `@tmustier/pi-session-recap` | 0.5.0 | recap “while you were away”: soạn sẵn bản tóm tắt khi bạn rời session, hiện ở cuối transcript / trên editor lúc quay lại. Cho workflow nhiều agent chạy song song |
 | 20 | `pi-lens` | 4.1.6 | LSP diagnostics + navigation, linters/type-checker, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. Trong setup này đã tắt widget + autoformat + autofix (xem mục riêng) |
+| 21 | `pi-browser-use` | 0.11.7 | trình duyệt cho agent qua `chrome-devtools-mcp` (không phải Playwright): Chrome headless riêng của pi với profile `~/.pi/browser-profile` (login 1 lần bằng `browser_setup`), chế độ `fresh` cách ly, tool `browser_*` + skill `browser-policy`. Cần Node ≥ 24 và Chrome stable. `browser_doctor` để tự chẩn đoán |
+| 22 | `@injaneity/pi-computer-use` | 0.5.1 | cho agent điều khiển app desktop trên macOS, Windows và Linux qua accessibility API của hệ điều hành: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Cài helper riêng cho user ở `~/Applications/pi-computer-use.app`; macOS cần cấp **Accessibility** + **Screen Recording** cho helper, và bước setup chỉ chạy trong session pi tương tác → ở chế độ `-p` (print) extension chưa làm được gì cho tới khi bạn cấp quyền |
 
 > Version là **tham khảo tại thời điểm snapshot**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
@@ -490,6 +494,8 @@ Trước khi ghi đè, `settings.json` **và** `auth.json` (nếu nguồn có) �
 
 Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CODING_AGENT_DIR`, không đụng setup thật.
 
+> ⚠️ Mọi số đo dưới đây lấy trên payload **20 package**. Snapshot hiện tại là **22 package** (thêm `pi-browser-use`, `@injaneity/pi-computer-use`) nên **chưa được đo lại**.
+
 | Kiểm tra | Kết quả |
 |---|---|
 | Thời gian cài lần đầu | **136–246 s** qua các lần chạy thật (tuỳ tốc độ npm; 335 s khi npm cache nguội) |
@@ -508,7 +514,7 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 | `--hooks` + `.pi-setup-exclude` | ✅ hooks sống sót, in cảnh báo "ghi đè", 54 file còn lại |
 | `--auth` khi restore | ✅ có `auth.json.bak.<ts>` giữ credential cũ trước khi ghi đè |
 
-### Windows 11 + Git Bash (MSYS2, bash 5.3)
+### Windows 11 + Git Bash (MSYS2, bash 5.3) — đo trên payload 20 package
 
 | Kiểm tra | Kết quả |
 |---|---|
