@@ -1,8 +1,8 @@
 <div align="center">
 
-# zuey-pi-setup
+# pi-setup
 
-**A portable snapshot of my [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 22 extensions on a new machine.**
+**A portable snapshot of a [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 22 extensions on a new machine.**
 
 pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-09-16
 
@@ -18,6 +18,7 @@ pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026
 
 - `~/.pi/agent/npm/` (~250 MB) — **not needed**, pi reinstalls it from `settings.json`
 - `~/.pi/agent/auth.json` — **not committed** (API keys + OAuth tokens), log in again on the new machine
+- `~/.pi/agent/models.json` — **committed, but without the key**: the 9router provider is in `config/models.json` with `apiKey: "$NINEROUTER_API_KEY"`, so no credential is in git
 - `~/.pi/agent/sessions/` (~56 MB) and `missions/` — **not committed** (history/state, may contain internal data)
 
 The mechanism: `settings.json` holds a `packages` array; pi reads it on startup and `npm install`s anything missing. So if you can carry the manifest, you carry the whole extension set.
@@ -31,8 +32,8 @@ The mechanism: `settings.json` holds a `packages` array; pi reads it on startup 
 npm i -g @earendil-works/pi-coding-agent@0.85.1
 
 # 2) clone
-git clone https://github.com/mrgoonie/zuey-pi-setup.git
-cd zuey-pi-setup
+git clone https://github.com/hvantoan/pi-setup.git
+cd pi-setup
 
 # 3) safe rehearsal into a temp dir (touches nothing real)
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify
@@ -41,12 +42,16 @@ cd zuey-pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
 ```
 
-Then log the providers back in (auth is not in the repo):
+Then provide the 9router key (auth is not in the repo — `config/models.json` stores `"apiKey": "$NINEROUTER_API_KEY"`, never a literal):
 
 ```bash
-pi auth check --provider opencode-go    # and /login inside pi for each provider
+export NINEROUTER_API_KEY=...              # add to ~/.zshrc / ~/.bashrc to persist
+pi auth check --provider 9router           # must say ready
 ```
 
+The `9router` provider points at the local gateway `http://127.0.0.1:20128/v1`, so that service has to be running; if it is not, pick another provider with `/model`.
+
+For any other provider (built-in ones keep their own `auth.json` entries): `/login` inside pi.
 One more manual step: `@injaneity/pi-computer-use` needs macOS **Accessibility** and **Screen Recording** granted to `~/Applications/pi-computer-use.app` (it installs the helper itself). Run pi interactively once and finish the setup prompt — in print mode the extension stays inert.
 
 Full details, copy/do-not-copy table, troubleshooting: **[`docs/pi-setup-migration.md`](./docs/pi-setup-migration.md)** (Vietnamese only).
@@ -78,7 +83,7 @@ The full Windows sequence:
 # inside Git Bash
 fnm use 24
 npm i -g @earendil-works/pi-coding-agent@0.85.1
-git clone https://github.com/mrgoonie/zuey-pi-setup.git && cd zuey-pi-setup
+git clone https://github.com/hvantoan/pi-setup.git && cd pi-setup
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # rehearsal
 ./scripts/pi-setup-restore.sh --install --verify                                 # for real
 ```
@@ -91,7 +96,7 @@ The statusline is laid out in exactly three rows — context bar scaled to the m
 
 **Light theme** (thinking `high`) — `cache-hit-rate` and `cache_ttl` are 0 here, so they hide themselves:
 
-![pi inside the zuey-pi worktree, 3-row statusline, light theme](./screenshots/pi-statusline-3-rows-light.webp)
+![pi with the 3-row statusline, light theme](./screenshots/pi-statusline-3-rows-light.webp)
 
 **Dark theme** (thinking `off`) — all five widgets on row 2, including `cache-hit-rate` 79.8% and `cache_ttl` ~1s:
 
@@ -104,7 +109,7 @@ The statusline is laid out in exactly three rows — context bar scaled to the m
 ## What's in the repo
 
 ```
-zuey-pi-setup/
+pi-setup/
 ├── README.md                        ← you are reading this
 ├── README.vi.md                     Vietnamese README
 ├── .gitattributes                   keeps *.sh at LF (Windows-friendly)
@@ -127,10 +132,10 @@ zuey-pi-setup/
     ├── .pi-setup-exclude           exclusion globs — backup honours this file
     ├── settings.json               manifest of 22 packages + model/theme/compaction
     ├── advisor.json                pi-advisor-flow config (at the config-dir root)
-    ├── 99extensions.json           99percentpeople family config (todo namespace)
     ├── pi-lens-config.json          pi-lens config — lives in ~/.pi-lens/, OUTSIDE the config dir
     ├── external-configs.txt        manifest: which file goes where on restore
     ├── APPEND_SYSTEM.md            extra system prompt
+    ├── models.json                 provider 9router (baseUrl `http://127.0.0.1:20128/v1`, key via `$NINEROUTER_API_KEY`)
     ├── models-store.json           model catalog (saves the 4h refresh wait)
     ├── model-fallback/
     │   └── config.json            pi-model-fallback rules (state.json is not taken)
@@ -202,7 +207,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-A ready-made bundle so you don't have to clone and run the backup yourself: **9 files** — `settings.json` (22 packages), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, and `model-fallback/config.json`.
+A ready-made bundle so you don't have to clone and run the backup yourself: **11 files** — `settings.json` (22 packages), `APPEND_SYSTEM.md`, `models.json` (9router provider), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, and `model-fallback/config.json`.
 
 It is the script's full default bundle, **filtered** through `.pi-setup-exclude` so machine-only material never reaches this public repo:
 
@@ -244,7 +249,7 @@ Restoring this bundle yields the same file set as `config/` — all 22 extension
 
 > Versions are **for reference at snapshot time**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
-Default provider: `opencode-go/deepseek-v4.1-flash` (thinking `high`). Enabled models: see `enabledModels` in `config/settings.json`.
+Default: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Enabled models: `9router/ol/deepseek-v4.1-flash` and `9router/flash` (9router's auto-fallback combo).
 
 ---
 
@@ -367,7 +372,7 @@ A rule-based model-fallback extension: when a provider returns an HTTP status ma
 
 `autoRetry` (on by default) re-queues the failed prompt as a follow-up after the model switch; the failed request itself is not replayed.
 
-Config lives at `~/.pi/agent/model-fallback/config.json` and is read/validated/written by the extension's `model_fallback_config` tool — there is **no TUI**, unlike `pi-provider-fallback` (removed from this snapshot). The package default is `zai/*` → `deepseek/deepseek-v4-flash`; this snapshot replaces it with a rule for the `deepseek` provider:
+Config lives at `~/.pi/agent/model-fallback/config.json` and is read/validated/written by the extension's `model_fallback_config` tool — there is **no TUI**, unlike `pi-provider-fallback` (removed from this snapshot). The package default is `zai/*` → `deepseek/deepseek-v4-flash`; this snapshot replaces it with a rule for the `9router` provider:
 
 ```json
 {
@@ -376,10 +381,10 @@ Config lives at `~/.pi/agent/model-fallback/config.json` and is read/validated/w
   "autoRetry": true,
   "rules": [
     {
-      "name": "deepseek-to-deepseek-v4-flash",
-      "matchProviders": ["deepseek"],
+      "name": "9router-to-flash-combo",
+      "matchProviders": ["9router"],
       "statuses": [429, 500, 502, 503, 504],
-      "fallback": { "provider": "deepseek", "model": "deepseek-v4-flash" }
+      "fallback": { "provider": "9router", "model": "flash" }
     }
   ]
 }
@@ -497,7 +502,9 @@ node scripts/pi-lens-compact-lsp-status.mjs --revert  # restore the original bun
 
 ### `pi-setup-backup.sh`
 
-By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models-store.json`, `model-fallback/config.json`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`).
+By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`).
+
+> The bundled `models.json` carries the same `$NINEROUTER_API_KEY` placeholder as `config/`. A bundle you build yourself copies the live file **verbatim** — if your `models.json` still holds a literal key, the script's secret scan warns before you publish it.
 
 ```bash
 ./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (setup only)

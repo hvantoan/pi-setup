@@ -1,7 +1,7 @@
 # Hướng dẫn migrate setup `pi` sang máy khác
 
 > Cập nhật: **2026-09-15** · pi `0.85.1` · Node `v24.19.0`
-> Repo: `zuey-pi-setup` — công cụ + snapshot setup, dùng để dựng lại nguyên bộ extension `pi` trên máy khác.
+> Repo: `pi-setup` — công cụ + snapshot setup, dùng để dựng lại nguyên bộ extension `pi` trên máy khác.
 
 ---
 
@@ -11,12 +11,12 @@
 
 ```bash
 npm i -g @earendil-works/pi-coding-agent@0.85.1   # cài pi trước (đúng version)
-git clone https://github.com/mrgoonie/zuey-pi-setup.git
-cd zuey-pi-setup
+git clone https://github.com/hvantoan/pi-setup.git
+cd pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
 ```
 
-Rồi `/login` lại từng provider. **Xong** — pi tự cài đủ 22 extensions.
+Rồi `export NINEROUTER_API_KEY=...` (key của 9router) — **xong**, pi tự cài đủ 22 extensions. Provider built-in khác thì `/login`.
 
 **Không cần** copy thư mục `npm/` (244 MB cache) hay `auth.json` (secret).
 
@@ -44,12 +44,13 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 |---|---|---|---|
 | `settings.json` | 4 KB | ✅ **bắt buộc** | 22 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
+| `models.json` | 1.3 KB | ✅ **bắt buộc** | khai báo provider **9router** (baseUrl `http://127.0.0.1:20128/v1`, `api: openai-completions`) + 4 model. `apiKey` để dạng `$NINEROUTER_API_KEY` → repo không chứa credential. Không có file này thì `9router` là provider lạ, `pi --list-models` không thấy model nào |
 | `extensions/` | 1.3 MB | ✅ (lọc) | extension tự viết local + config của chúng. `orca-*.ts` (Orca sinh) và `agentkit-*` (AgentKit sinh) bị loại — xem `.pi-setup-exclude` |
 | `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
 | `model-fallback/config.json` | — | ✅ **mặc định** | rule của `pi-model-fallback`, ở thư mục `model-fallback/` (không trong `extensions/`) nên liệt kê riêng; **chỉ lấy file config** — `state.json` cùng thư mục là state theo máy (entry + mốc cooldown), không đưa vào artifact |
 | `extensions/*/hooks/` | 544 KB | ⚠️ opt-in | `--hooks` (mặc định đã nằm trong `extensions/` khi không lọc) |
 | `models-store.json` | 28 KB | ✅ | catalog model; có sẵn thì khỏi chờ refresh 4 giờ |
-| `99extensions.json` | — | ✅ **mặc định** | config họ 99percentpeople (`@99percentpeople/pi-todo`), ở gốc config dir; chỉ có sau khi dùng `/99settings` |
+| `99extensions.json` | — | ➖ không có | config họ 99percentpeople (`@99percentpeople/pi-todo`) ở gốc config dir; chỉ sinh ra sau khi dùng `/99settings` nên snapshot này không có. Script vẫn liệt kê, nên nó tự được lấy khi bạn dùng tính năng đó |
 | `~/.unipi/config/notify/config.json` | — | ❌ **credential** | config `@pi-unipi/notify`: chứa token Gotify + botToken/chatId Telegram → **cố ý** không đưa vào; máy mới chạy lại `/unipi:notify-set-gotify` + `/unipi:notify-set-tg` |
 | `~/.pi-lens/config.json` | 136 B | ✅ **mặc định** | config `pi-lens`, nằm **NGOÀI** config dir → lấy qua `EXTERNAL_CONFIGS`, vào artifact thành `pi-lens-config.json` + manifest `external-configs.txt` (⚠️ **không** đặt tên artifact là `pi-lens.json`: trùng basename legacy của pi-lens → bị đọc như project config deprecated, xem README) |
 | `advisor.json` | — | ✅ **mặc định** | config `pi-advisor-flow`, ở **gốc** config dir (không trong `extensions/`) nên liệt kê riêng; chỉ có sau `/advisor` hoặc `/advisor-settings` |
@@ -69,7 +70,7 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 ## Repo có gì
 
 ```
-zuey-pi-setup/
+pi-setup/
 ├── README.md                        English README (bản mặc định, GitHub hiển thị)
 ├── README.vi.md                     README tiếng Việt
 ├── .gitattributes                   ← giữ LF cho *.sh (tránh CRLF khi clone trên Windows)
@@ -83,6 +84,7 @@ zuey-pi-setup/
     ├── .pi-setup-exclude           ← glob loại trừ (backup tôn trọng file này)
     ├── settings.json
     ├── APPEND_SYSTEM.md
+    ├── models.json
     ├── models-store.json
     └── extensions/
         ├── pi-footer-cache-tps.ts
@@ -118,8 +120,8 @@ pi --version                                        # phải ra 0.85.1
 ## Bước 2 — restore
 
 ```bash
-git clone https://github.com/mrgoonie/zuey-pi-setup.git
-cd zuey-pi-setup
+git clone https://github.com/hvantoan/pi-setup.git
+cd pi-setup
 
 # an toàn: thử vào thư mục tạm trước, không đụng config thật
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify
@@ -137,15 +139,16 @@ Script sẽ:
 
 ## Bước 3 — login lại provider
 
-`auth.json` không nằm trong repo (secret). Các provider của setup này:
+`auth.json` không nằm trong repo (secret). Setup này dùng **9router** (local gateway tại `http://127.0.0.1:20128/v1`), provider khai báo trong `models.json` với `"apiKey": "$NINEROUTER_API_KEY"` — nên chỉ cần export biến môi trường, không có key trong git:
 
 ```bash
-pi auth check --provider opencode-go      # chẩn đoán
-pi auth check --provider deepseek
-pi auth check --provider openai-codex
+export NINEROUTER_API_KEY=...             # thêm vào ~/.zshrc / ~/.bashrc nếu muốn giữ
+pi auth check --provider 9router          # phải ra `ready`
 ```
 
-Trong pi: `/login`, hoặc `pi auth login` theo hướng dẫn `/login`. Kiểm tra model đã thấy chưa: `pi --list-models`.
+Provider built-in khác (nếu bạn dùng) thì `/login` trong pi. Kiểm tra model đã thấy chưa: `pi --list-models` (phải thấy 4 model `9router/*` khai báo trong `models.json`).
+
+> `models.json` là nguồn sự thật của provider 9router (baseUrl + danh sách model). Restore ghi nó vào `~/.pi/agent/models.json`; nếu bạn đổi model trong `/model` rồi muốn snapshot lại thì chạy `./scripts/pi-setup-backup.sh --config-dir config`.
 
 ---
 
@@ -388,7 +391,7 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 ### Clone từ repo public (đo ở snapshot 16 package)
 
 ```bash
-git clone https://github.com/mrgoonie/zuey-pi-setup.git /tmp/verify-clone
+git clone https://github.com/hvantoan/pi-setup.git /tmp/verify-clone
 cd /tmp/verify-clone
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify
 ```
@@ -493,12 +496,11 @@ loại trừ: 82 file khớp .pi-setup-exclude (extensions/orca-*.ts extensions/
 
 - [ ] Máy mới: Node đúng version (`nvm` — hoặc `fnm` trên Windows) → `npm i -g @earendil-works/pi-coding-agent@0.85.1`
 - [ ] **Windows:** đang ở trong **Git Bash** (không PowerShell/cmd)
-- [ ] `git clone https://github.com/mrgoonie/zuey-pi-setup.git`
+- [ ] `git clone https://github.com/hvantoan/pi-setup.git`
 - [ ] `./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify` (thử an toàn)
 - [ ] `./scripts/pi-setup-restore.sh --install --verify` → phải ra `22/22 extension khớp`
 - [ ] **Windows/font:** terminal đã dùng **Nerd Font** (bản Mono) hoặc `iconMode` đã đổi sang `emoji`/`text` — nếu không, icon statusline sẽ vỡ
-- [ ] `/login` cho `opencode-go`, `deepseek`, `openai-codex`
-- [ ] `pi auth check --provider opencode-go` → OK
+- [ ] `export NINEROUTER_API_KEY=...` (hoặc lưu vào shell rc) rồi `pi auth check --provider 9router` → `ready`
 - [ ] Thử 1 extension, ví dụ `/btw <câu hỏi>` (cần TUI mode)
 - [ ] Kiểm tra `/model-fallback:status` (config `model-fallback/config.json` đã được restore kèm; backup tự cập nhật khi bạn đổi rule qua tool `model_fallback_config`)
 - [ ] Chạy `/advisor-settings` để cấu hình Executor/Advisor (sau đó backup tự kèm `advisor.json`)

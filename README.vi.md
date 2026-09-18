@@ -1,8 +1,8 @@
 <div align="center">
 
-# zuey-pi-setup
+# pi-setup
 
-**Portable snapshot của setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 22 extensions trên máy mới.**
+**Portable snapshot của một setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 22 extensions trên máy mới.**
 
 pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-16
 
@@ -31,8 +31,8 @@ Cơ chế: `settings.json` chứa mảng `packages`; pi đọc nó lúc khởi �
 npm i -g @earendil-works/pi-coding-agent@0.85.1
 
 # 2) clone
-git clone https://github.com/mrgoonie/zuey-pi-setup.git
-cd zuey-pi-setup
+git clone https://github.com/hvantoan/pi-setup.git
+cd pi-setup
 
 # 3) thử an toàn vào thư mục tạm (không đụng config thật)
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify
@@ -41,11 +41,16 @@ cd zuey-pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
 ```
 
-Sau đó login lại provider (auth không nằm trong repo):
+Sau đó cung cấp key 9router (auth không nằm trong repo — `config/models.json` ghi `"apiKey": "$NINEROUTER_API_KEY"`, không bao giờ ghi key thật):
 
 ```bash
-pi auth check --provider opencode-go    # và /login trong pi cho từng provider
+export NINEROUTER_API_KEY=...              # thêm vào ~/.zshrc / ~/.bashrc nếu muốn giữ
+pi auth check --provider 9router           # phải ra ready
 ```
+
+Provider `9router` trỏ vào gateway local `http://127.0.0.1:20128/v1`, nên service đó phải đang chạy; nếu không, chọn provider khác bằng `/model`.
+
+Provider khác: `/login` trong pi.
 
 Thêm 1 bước tay: `@injaneity/pi-computer-use` cần cấp **Accessibility** và **Screen Recording** cho `~/Applications/pi-computer-use.app` (helper được cài tự động). Mở pi ở chế độ tương tác 1 lần và làm hết prompt setup — ở chế độ print, extension không hoạt động.
 
@@ -78,7 +83,7 @@ Ví dụ đầy đủ trên Windows:
 # trong Git Bash
 fnm use 24
 npm i -g @earendil-works/pi-coding-agent@0.85.1
-git clone https://github.com/mrgoonie/zuey-pi-setup.git && cd zuey-pi-setup
+git clone https://github.com/hvantoan/pi-setup.git && cd pi-setup
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # thử an toàn
 ./scripts/pi-setup-restore.sh --install --verify                                 # làm thật
 ```
@@ -91,7 +96,7 @@ Statusline được xếp đúng 3 hàng — context bar theo context window c�
 
 **Theme sáng** (thinking `high`) — lúc này `cache-hit-rate` và `cache_ttl` bằng 0 nên tự ẩn:
 
-![pi trong worktree zuey-pi với statusline 3 hàng, theme sáng](./screenshots/pi-statusline-3-rows-light.webp)
+![pi với statusline 3 hàng, theme sáng](./screenshots/pi-statusline-3-rows-light.webp)
 
 **Theme tối** (thinking `off`) — đủ 5 widget hàng 2, gồm `cache-hit-rate` 79.8% và `cache_ttl` ~1s:
 
@@ -104,7 +109,7 @@ Statusline được xếp đúng 3 hàng — context bar theo context window c�
 ## Repo có gì
 
 ```
-zuey-pi-setup/
+pi-setup/
 ├── README.vi.md                     ← bạn đang đọc
 ├── README.md                        English README (bản mặc định)
 ├── docs/
@@ -126,10 +131,10 @@ zuey-pi-setup/
     ├── .pi-setup-exclude           glob loại trừ — backup tôn trọng file này
     ├── settings.json               manifest 22 packages + model/theme/compaction
     ├── advisor.json                config pi-advisor-flow (ở gốc config dir)
-    ├── 99extensions.json           config họ 99percentpeople (namespace todo)
     ├── pi-lens-config.json          config pi-lens — nằm ở ~/.pi-lens/ NGOÀI config dir
     ├── external-configs.txt        manifest: file nào đặt về đâu khi restore
     ├── APPEND_SYSTEM.md            system prompt phụ
+    ├── models.json                 provider 9router (baseUrl `http://127.0.0.1:20128/v1`, key qua `$NINEROUTER_API_KEY`)
     ├── models-store.json           catalog model (khỏi chờ refresh 4h)
     ├── model-fallback/
     │   └── config.json            rule fallback của pi-model-fallback (state.json không lấy)
@@ -201,7 +206,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **9 file** — `settings.json` (22 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `model-fallback/config.json`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **11 file** (mục + config ngoài + manifest) — `settings.json` (22 package), `APPEND_SYSTEM.md`, `models.json` (provider 9router), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `model-fallback/config.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -243,7 +248,7 @@ Restore bundle này cho cùng bộ file như `config/` — đủ 22 extension + 
 
 > Version là **tham khảo tại thời điểm snapshot**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
-Provider mặc định: `opencode-go/deepseek-v4.1-flash` (thinking `high`). Model đang bật: xem `enabledModels` trong `config/settings.json`.
+Provider mặc định: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Model đang bật: `9router/ol/deepseek-v4.1-flash` và `9router/flash` (combo auto-fallback của 9router).
 
 ---
 
@@ -364,7 +369,7 @@ Extension fallback model theo **rule**: khi provider trả về HTTP status kh�
 
 `autoRetry` (mặc định bật) đưa lại prompt lỗi thành follow-up sau khi đã đổi model; bản thân request lỗi không được gửi lại.
 
-Config ở `~/.pi/agent/model-fallback/config.json`, do tool `model_fallback_config` của extension đọc/validate/ghi — **không có TUI** như `pi-provider-fallback` (đã gỡ khỏi snapshot này). Mặc định của package là `zai/*` → `deepseek/deepseek-v4-flash`; snapshot này thay bằng rule cho provider `deepseek`:
+Config ở `~/.pi/agent/model-fallback/config.json`, do tool `model_fallback_config` của extension đọc/validate/ghi — **không có TUI** như `pi-provider-fallback` (đã gỡ khỏi snapshot này). Mặc định của package là `zai/*` → `deepseek/deepseek-v4-flash`; snapshot này thay bằng rule cho provider `9router`:
 
 ```json
 {
@@ -373,10 +378,10 @@ Config ở `~/.pi/agent/model-fallback/config.json`, do tool `model_fallback_con
   "autoRetry": true,
   "rules": [
     {
-      "name": "deepseek-to-deepseek-v4-flash",
-      "matchProviders": ["deepseek"],
+      "name": "9router-to-flash-combo",
+      "matchProviders": ["9router"],
       "statuses": [429, 500, 502, 503, 504],
-      "fallback": { "provider": "deepseek", "model": "deepseek-v4-flash" }
+      "fallback": { "provider": "9router", "model": "flash" }
     }
   ]
 }
@@ -494,7 +499,9 @@ node scripts/pi-lens-compact-lsp-status.mjs --revert  # trả bundle về nguyê
 
 ### `pi-setup-backup.sh`
 
-Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models-store.json`, `model-fallback/config.json`, `extensions/` — và **luôn lấy cả statusline** (`extensions/pi-footer.json` nằm trong `extensions/`).
+Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `extensions/` — và **luôn lấy cả statusline** (`extensions/pi-footer.json` nằm trong `extensions/`).
+
+> `models.json` trong bundle mang cùng placeholder `$NINEROUTER_API_KEY` như `config/`. Bundle bạn tự tạo copy file live **nguyên bản** — nếu `models.json` của bạn còn key thật thì script quét secret sẽ cảnh báo trước khi bạn publish.
 
 ```bash
 ./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (chỉ setup)

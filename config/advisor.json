@@ -8,6 +8,6 @@
   "advisorTrackedFileContent": true,
   "advisorUntrackedContent": true,
   "gateFailureMode": "warn-and-continue",
-  "advisor": "deepseek/deepseek-v4-flash",
-  "executor": "deepseek/deepseek-v4-flash"
+  "advisor": "9router/ol/deepseek-v4.1-flash",
+  "executor": "9router/ol/deepseek-v4.1-flash"
 }

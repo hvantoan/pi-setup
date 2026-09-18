@@ -4,12 +4,20 @@
   "autoRetry": true,
   "rules": [
     {
-      "name": "deepseek-to-deepseek-v4-flash",
-      "matchProviders": ["deepseek"],
-      "statuses": [429, 500, 502, 503, 504],
+      "name": "9router-to-flash-combo",
+      "matchProviders": [
+        "9router"
+      ],
+      "statuses": [
+        429,
+        500,
+        502,
+        503,
+        504
+      ],
       "fallback": {
-        "provider": "deepseek",
-        "model": "deepseek-v4-flash"
+        "provider": "9router",
+        "model": "flash"
       }
     }
   ]

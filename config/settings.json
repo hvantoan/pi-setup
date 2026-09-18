@@ -1,8 +1,8 @@
 {
   "lastChangelogVersion": "0.85.1",
   "theme": "light/dark",
-  "defaultProvider": "deepseek",
-  "defaultModel": "deepseek-v4-flash",
+  "defaultProvider": "9router",
+  "defaultModel": "ol/deepseek-v4.1-flash",
   "defaultThinkingLevel": "high",
   "defaultProjectTrust": "always",
   "tuiMode": "regular",
@@ -34,13 +34,8 @@
     "npm:@injaneity/pi-computer-use"
   ],
   "enabledModels": [
-    "deepseek/deepseek-v4-flash",
-    "opencode-go/deepseek-v4.1-flash",
-    "opencode-go/kimi-k2.7-code",
-    "opencode-go/minimax-m3",
-    "opencode-go/glm-5.3",
-    "openai-codex/gpt-5.6-sol",
-    "deepseek/deepseek-v4-pro"
+    "9router/ol/deepseek-v4.1-flash",
+    "9router/flash"
   ],
   "showCacheMissNotices": true,
   "thinkingBudgets": {
