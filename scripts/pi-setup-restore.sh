@@ -35,7 +35,9 @@ EXTERNAL_MANIFEST="external-configs.txt"
 # 'hooks' không cần liệt kê riêng: chúng nằm trong cây extensions/.
 # 'model-fallback/config.json' là file lồng trong thư mục riêng (pi-model-fallback); chỉ
 # restore file config, KHÔNG restore model-fallback/state.json (state theo máy).
-ITEMS=(settings.json APPEND_SYSTEM.md models.json models-store.json advisor.json 99extensions.json model-fallback/config.json extensions skills memory missions sessions auth.json)
+# 'patches/' là bản vá node_modules + script re-apply (xem README); phải restore rồi
+# chạy lại script sau khi pi đã cài extension, nếu không `devin/swe-*` không resolve.
+ITEMS=(settings.json APPEND_SYSTEM.md models.json models-store.json advisor.json 99extensions.json model-fallback/config.json patches extensions skills memory missions sessions auth.json)
 
 info() { printf '%s\n' "$*"; }
 warn() { printf '⚠  %s\n' "$*" >&2; }
@@ -277,5 +279,20 @@ if [ -f "$LENS_PATCH" ] && command -v node >/dev/null 2>&1; then
 	fi
 fi
 info "  4. $LENS_STEP"
+# Ví dụ enabledModels dùng 'devin/swe-*', chỉ resolve được sau khi vá
+# pi-devin-provider khám phá model SỚM (bản gốc khám phá trong session_start).
+# Bản vá nằm trong patches/ nên nói rõ bước chạy lại, kèm check thật.
+PATCH_REAPPLY="$TARGET/patches/reapply-devin-early-discovery.sh"
+PATCH_CHECK="$TARGET/patches/check-devin-early-discovery.sh"
+if [ -f "$PATCH_REAPPLY" ]; then
+	if [ -f "$PATCH_CHECK" ] && sh "$PATCH_CHECK" >/dev/null 2>&1; then
+		info "  5. devin early-discovery: đã vá (devin/swe-* resolve ở startup)"
+	else
+		info "  5. devin early-discovery: CHƯA vá — chạy: sh $PATCH_REAPPLY"
+		info "     (chạy SAU bước --install; 'pi update' ghi đè node_modules nên phải chạy lại)"
+	fi
+else
+	info "  5. devin early-discovery: không có $PATCH_REAPPLY trong bản restore này"
+fi
 [ "$SCRATCH" -eq 1 ] && info "  (scratch) kiểm tra tay:  PI_CODING_AGENT_DIR=$TARGET pi list"
 exit 0

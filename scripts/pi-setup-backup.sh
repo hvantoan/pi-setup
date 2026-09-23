@@ -36,12 +36,13 @@ AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 # Setup: đủ để dựng lại y hệt bộ extension.
 # advisor.json nằm ở GỐC config dir (không phải trong extensions/), do pi-advisor-flow
 # dùng làm config toàn cục → phải liệt kê riêng, nếu không sẽ không được backup.
-# advisor.json và 99extensions.json nằm ở GỐC config dir (không trong extensions/)
-# → phải liệt kê riêng, nếu không sẽ không được backup.
+# 99extensions.json cũng nằm ở gốc config dir, liệt kê riêng vì cùng lý do.
 # model-fallback/config.json của pi-model-fallback cũng nằm ngoài extensions/ (trong
 # thư mục model-fallback/) → liệt kê riêng. CHỈ lấy file config, KHÔNG lấy cả thư mục:
 # state.json cùng thư mục là state theo máy (entry + mốc cooldown), không phải setup.
-ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models.json models-store.json advisor.json 99extensions.json model-fallback/config.json extensions)
+# patches/ chứa bản vá node_modules (hiện tại: pi-devin-provider) + script re-apply/
+# kiểm tra. Không có nó thì `devin/swe-*` trong enabledModels không resolve được.
+ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models.json models-store.json advisor.json 99extensions.json model-fallback/config.json extensions patches)
 
 OUT="$ROOT/pi-setup-portable.tar.gz"
 CONFIG_DIR=""
@@ -99,6 +100,7 @@ SKIP=()
 # shellcheck disable=SC2088
 EXTERNAL_CONFIGS=(
 	"~/.pi-lens/config.json:pi-lens-config.json"
+	"~/.config/kitty/kitty.conf:kitty.conf"
 )
 # Guard: cảnh báo nếu ai đó thêm artifact trùng basename reserved của pi-lens.
 pi_lens_reserved_name() {

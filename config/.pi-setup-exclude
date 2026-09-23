@@ -12,6 +12,11 @@ extensions/orca-*.ts
 # AgentKit tự cài lại trên máy mới bằng `ak`, nên không thuộc repo này.
 extensions/agentkit-*
 
+# Hook do herdr sinh (~/.pi/agent/extensions/herdr-agent-state.ts).
+# Header ghi rõ "managed by herdr; reinstalling or updating the integration
+# overwrites this file" → herdr tự cài lại trên máy mới, bản trong repo sẽ lỗi thời.
+extensions/herdr-*.ts
+
 # State của pi-advisor-flow (salt + log outcome) — không phải setup, không public
 advisor-outcomes.jsonl
 advisor-outcomes-salt
