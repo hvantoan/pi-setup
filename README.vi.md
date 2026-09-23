@@ -4,7 +4,7 @@
 
 **Portable snapshot của một setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 22 extensions trên máy mới.**
 
-pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-16
+pi `0.87.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-23
 
 [English](./README.md) · **Tiếng Việt**
 
@@ -28,7 +28,7 @@ Cơ chế: `settings.json` chứa mảng `packages`; pi đọc nó lúc khởi �
 
 ```bash
 # 1) cài pi, đúng version
-npm i -g @earendil-works/pi-coding-agent@0.85.1
+npm i -g @earendil-works/pi-coding-agent@0.87.1
 
 # 2) clone
 git clone https://github.com/hvantoan/pi-setup.git
@@ -82,7 +82,7 @@ Ví dụ đầy đủ trên Windows:
 ```bash
 # trong Git Bash
 fnm use 24
-npm i -g @earendil-works/pi-coding-agent@0.85.1
+npm i -g @earendil-works/pi-coding-agent@0.87.1
 git clone https://github.com/hvantoan/pi-setup.git && cd pi-setup
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # thử an toàn
 ./scripts/pi-setup-restore.sh --install --verify                                 # làm thật
@@ -136,11 +136,18 @@ pi-setup/
     ├── APPEND_SYSTEM.md            system prompt phụ
     ├── models.json                 provider 9router (baseUrl `http://127.0.0.1:20128/v1`, key qua `$NINEROUTER_API_KEY`)
     ├── models-store.json           catalog model (khỏi chờ refresh 4h)
+    ├── kitty.conf                  config terminal kitty (ở ~/.config/kitty/)
     ├── model-fallback/
     │   └── config.json            rule fallback của pi-model-fallback (state.json không lấy)
+    ├── patches/                    bản vá node_modules (xem mục "Package được vá")
+    │   ├── pi-devin-provider-index.ts          file extension đã vá
+    │   ├── reapply-devin-early-discovery.sh    vá lại sau `pi update`
+    │   └── check-devin-early-discovery.sh      check chạy được (PASS/FAIL)
     └── extensions/                 extension tự viết, không có trên npm
         ├── pi-footer-cache-tps.ts  đẩy cache-TTL + tốc độ token (t/s) vào pi-footer
-        └── pi-footer.json          layout statusline (gồm context bar)
+        ├── pi-footer.json          layout statusline (gồm context bar)
+        └── pi-tool-display/
+            └── config.json        chế độ hiển thị output + diff view của pi-tool-display
 ```
 
 `config/` là **mirror** của phần setup trong `~/.pi/agent`. Mọi thứ khác (cache, secret, history) **không** được đưa vào.
@@ -151,6 +158,7 @@ pi-setup/
 |---|---|---|
 | `extensions/orca-*.ts` (3 file, 1 239 dòng) | Orca (`@orca-managed-pi-extension`) | glue code tích hợp Orca; Orca tự sinh lại khi quản lý pi |
 | `extensions/agentkit-agent/`, `extensions/agentkit-hooks-engineer/` | AgentKit (`ak`) | 1.2 MB hook đã sinh + cache chứa **path tuyệt đối** (`native-skill-paths.json` 157 KB); `ak` tự cài lại |
+| `extensions/herdr-agent-state.ts` | herdr | Header ghi *"managed by herdr; reinstalling or updating the integration overwrites this file"* → bản trong git sẽ lỗi thời |
 | `missions/`, `memory/`, `skills/` | pi / AgentKit | state theo máy, không phải setup |
 
 ### `.pi-setup-exclude`
@@ -170,7 +178,7 @@ Từ bản hiện tại, cùng file đó cũng dùng được cho **chế độ 
 
 ### Config KHÔNG backup được: `@pi-unipi/notify`
 
-`~/.unipi/config/notify/config.json` chứa **token Gotify** và **botToken + chatId Telegram**, nên **cố ý không nằm** trong `EXTERNAL_CONFIGS` — đưa vào là lộ credential lên repo public. Trên máy mới phải thiết lập lại:
+`@pi-unipi/notify` **không nằm trong snapshot này** (đã bỏ khỏi `settings.json`), nhưng nếu bạn thêm lại thì config `~/.unipi/config/notify/config.json` chứa **token Gotify** và **botToken + chatId Telegram**, nên nó **cố ý không nằm** trong `EXTERNAL_CONFIGS` — đưa vào là lộ credential lên repo public. Thiết lập ngay trên máy đó:
 
 ```bash
 /unipi:notify-set-gotify     # cấu hình server Gotify
@@ -188,6 +196,7 @@ Vài extension để config **bên ngoài** `~/.pi/agent/`, nên không thể l�
 # trong scripts/pi-setup-backup.sh
 EXTERNAL_CONFIGS=(
 	"~/.pi-lens/config.json:pi-lens-config.json"
+	"~/.config/kitty/kitty.conf:kitty.conf"
 )
 ```
 
@@ -206,7 +215,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **11 file** (mục + config ngoài + manifest) — `settings.json` (22 package), `APPEND_SYSTEM.md`, `models.json` (provider 9router), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts` và `model-fallback/config.json`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **15 file** (mục + config ngoài + manifest) — `settings.json` (22 package), `APPEND_SYSTEM.md`, `models.json` (provider 9router), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json`, `patches/` (3 file) và `model-fallback/config.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -214,6 +223,7 @@ Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **11 file** (m�
 |---|---|
 | `extensions/orca-*.ts` (3 file, 1 239 dòng) | code do Orca sinh — bạn đã chọn không đưa lên public |
 | `extensions/agentkit-*` (95 file) | chứa `native-skill-paths.json` + `native-skill-hashes.json` (**path tuyệt đối**, danh sách 107 skill) và `hooks/.logs/hook-log.jsonl` (log hoạt động) |
+| `extensions/herdr-agent-state.ts` | herdr sinh (v9), bị ghi đè mỗi lần herdr update |
 
 Restore bundle này cho cùng bộ file như `config/` — đủ 22 extension + statusline. Đây là snapshot của máy, nên `settings.json` trong bundle có thể khác `config/settings.json` ở những key bạn đổi sau đó (ví dụ model mặc định, TUI mode). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
 
@@ -223,32 +233,32 @@ Restore bundle này cho cùng bộ file như `config/` — đủ 22 extension + 
 
 | # | Package | Version | Làm gì |
 |---|---|---|---|
-| 1 | `pi-web-access` | 0.29.0 | web search, fetch URL, clone GitHub repo, đọc PDF, hiểu YouTube + video local |
-| 2 | `pi-mcp-adapter` | 2.34.0 | adapter MCP (Model Context Protocol) |
-| 3 | `pi-subagents` | 0.68.0 | delegate cho subagent + workflow multi-agent bằng script |
-| 4 | `pi-goal-x` | 0.31.4 | `/goal`: lập kế hoạch mục tiêu, tiến độ bền, auditor kiểm tra hoàn thành |
-| 5 | `pi-background-tasks` | 2.5.0 | task shell chạy nền, delegated agent read-only, attested run, Fusion workflow |
-| 6 | `pi-model-fallback` | 0.4.0 | chuyển sang model fallback theo **rule** (provider/model + HTTP status 429/5xx) khi provider lỗi; state bền có cooldown; config bằng tool `model_fallback_config` |
-| 7 | `@narumitw/pi-usage` | 0.60.8 | hiển thị usage của account + số dư DeepSeek API |
+| 1 | `pi-web-access` | 0.30.0 | web search, fetch URL, clone GitHub repo, đọc PDF, hiểu YouTube + video local |
+| 2 | `pi-mcp-adapter` | 2.36.0 | adapter MCP (Model Context Protocol) |
+| 3 | `pi-subagents` | 0.70.1 | delegate cho subagent + workflow multi-agent bằng script |
+| 4 | `pi-goal-x` | 0.31.8 | `/goal`: lập kế hoạch mục tiêu, tiến độ bền, auditor kiểm tra hoàn thành |
+| 5 | `pi-background-tasks` | 2.6.3 | task shell chạy nền, delegated agent read-only, attested run, Fusion workflow |
+| 6 | `pi-model-fallback` | 0.5.0 | chuyển sang model fallback theo **rule** (provider/model + HTTP status 429/5xx) khi provider lỗi; state bền có cooldown; config bằng tool `model_fallback_config` |
+| 7 | `@narumitw/pi-usage` | 0.60.11 | hiển thị usage của account + số dư DeepSeek API |
 | 8 | `pi-simplify` | 0.2.3 | review code vừa đổi theo hướng rõ ràng / nhất quán / dễ bảo trì |
 | 9 | `pi-footer` | 0.5.1 | statusline nhiều dòng, tuỳ biến được (dùng trong repo này) |
-| 10 | `pi-powerline-footer` | 0.17.1 | status bar kiểu powerline (đang **tắt** bằng `"extensions": []`) |
+| 10 | `pi-powerline-footer` | 0.17.2 | status bar kiểu powerline (đang **tắt** bằng `"extensions": []`) |
 | 11 | `pi-memory` | 0.4.2 | memory + semantic search (qmd) trên daily log / long-term / scratchpad |
 | 12 | `pi-worktree` | 1.3.3 | quản lý git worktree, tạo workspace cách ly bằng 1 lệnh |
-| 13 | `@99percentpeople/pi-todo` | 1.2.7 | todo tối giản, atomic: xoá bằng omission, state sống qua compaction, có dependencies, widget read-only |
-| 14 | `@juicesharp/rpiv-ask-user-question` | 2.10.1 | hỏi bạn bằng questionnaire có lựa chọn thay vì đoán |
-| 15 | `@juicesharp/rpiv-btw` | 2.10.1 | `/btw`: hỏi nhanh 1 câu bằng chính model chính, không làm bẩn conversation |
-| 16 | `@pi-unipi/notify` | 2.17.0 | thông báo khi agent xong/lỗi: native OS, Gotify, Telegram, ntfy, định tuyến theo từng loại event (⚠ config chứa credential — không backup) |
-| 17 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` giả TLS desktop browser + trích nội dung bằng defuddle |
-| 18 | `pi-advisor-flow` | 0.6.0 | flow Executor/Advisor: ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc |
-| 19 | `@tmustier/pi-session-recap` | 0.5.0 | recap “while you were away”: soạn sẵn bản tóm tắt khi bạn rời session, hiện ở cuối transcript / trên editor lúc quay lại. Cho workflow nhiều agent chạy song song |
-| 20 | `pi-lens` | 4.1.6 | LSP diagnostics + navigation, linters/type-checker, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. Trong setup này đã tắt widget + autoformat + autofix (xem mục riêng) |
-| 21 | `pi-browser-use` | 0.11.7 | trình duyệt cho agent qua `chrome-devtools-mcp` (không phải Playwright): Chrome headless riêng của pi với profile `~/.pi/browser-profile` (login 1 lần bằng `browser_setup`), chế độ `fresh` cách ly, tool `browser_*` + skill `browser-policy`. Cần Node ≥ 24 và Chrome stable. `browser_doctor` để tự chẩn đoán |
-| 22 | `@injaneity/pi-computer-use` | 0.5.1 | cho agent điều khiển app desktop trên macOS, Windows và Linux qua accessibility API của hệ điều hành: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Cài helper riêng cho user ở `~/Applications/pi-computer-use.app`; macOS cần cấp **Accessibility** + **Screen Recording** cho helper, và bước setup chỉ chạy trong session pi tương tác → ở chế độ `-p` (print) extension chưa làm được gì cho tới khi bạn cấp quyền |
+| 13 | `@99percentpeople/pi-todo` | 1.2.8 | todo tối giản, atomic: xoá bằng omission, state sống qua compaction, có dependencies, widget read-only |
+| 14 | `@juicesharp/rpiv-ask-user-question` | 2.11.0 | hỏi bạn bằng questionnaire có lựa chọn thay vì đoán |
+| 15 | `@juicesharp/rpiv-btw` | 2.11.0 | `/btw`: hỏi nhanh 1 câu bằng chính model chính, không làm bẩn conversation |
+| 16 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` giả TLS desktop browser + trích nội dung bằng defuddle |
+| 17 | `pi-advisor-flow` | 0.8.0 | flow Executor/Advisor: ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc |
+| 18 | `@tmustier/pi-session-recap` | 0.5.1 | recap “while you were away”: soạn sẵn bản tóm tắt khi bạn rời session, hiện ở cuối transcript / trên editor lúc quay lại. Cho workflow nhiều agent chạy song song |
+| 19 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checker, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. Trong setup này đã tắt widget + autoformat + autofix (xem mục riêng) |
+| 20 | `@injaneity/pi-computer-use` | 0.5.1 | cho agent điều khiển app desktop trên macOS, Windows và Linux qua accessibility API của hệ điều hành: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Cài helper riêng cho user ở `~/Applications/pi-computer-use.app`; macOS cần cấp **Accessibility** + **Screen Recording** cho helper, và bước setup chỉ chạy trong session pi tương tác → ở chế độ `-p` (print) extension chưa làm được gì cho tới khi bạn cấp quyền |
+| 21 | `pi-devin-provider` | 0.1.0 | thêm provider `devin` (catalog model của Devin) và giữ `devin/swe-*` trong vòng xoay model. Cần bản vá trong `patches/` — không có thì pattern scope không resolve được |
+| 22 | `pi-tool-display` | 0.5.0 | thay cách render mặc định của `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` bằng bản tóm tắt gọn (`summary`/`count`/`bars`), bash output thu gọn được và diff view 2 cột. Config ở `config/extensions/pi-tool-display/config.json` |
 
-> Version là **tham khảo tại thời điểm snapshot**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
+> Version là **tham khảo tại thời điểm snapshot (2026-09-23)**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
-Provider mặc định: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Model đang bật: `9router/ol/deepseek-v4.1-flash` và `9router/flash` (combo auto-fallback của 9router).
+Provider mặc định: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Model đang bật: `9router/ol/deepseek-v4.1-flash`, `9router/flash` (combo auto-fallback của 9router) và `devin/swe-*` (cần bản vá bên dưới).
 
 ---
 
@@ -497,9 +507,28 @@ node scripts/pi-lens-compact-lsp-status.mjs --revert  # trả bundle về nguyê
 
 > ⚠ npm ghi đè `pi-lens/dist/index.js` mỗi lần `pi update` hoặc cài lại pi-lens → **chạy lại script này**. Đó là lý do một script vá nằm trong repo snapshot. Đã gửi đề xuất upstream xin option chính thức cho dòng status này.
 
+### `patches/` — package được vá
+
+Snapshot còn một bản vá khác, trong `~/.pi/agent/patches/` (mirror sang `config/patches/`):
+
+| File | Là gì |
+| --- | --- |
+| `pi-devin-provider-index.ts` | bản đã vá của `pi-devin-provider/extensions/devin/index.ts` |
+| `reapply-devin-early-discovery.sh` | copy bản vá đè lên file trong npm |
+| `check-devin-early-discovery.sh` | check chạy được — `PASS: devin/swe-2-* resolves at startup` / `FAIL` |
+
+**Vì sao:** pi resolve scope `enabledModels` / `--models` dựa trên catalog model **trước khi** handler `session_start` của extension nào chạy, trong khi `pi-devin-provider` khám phá danh sách thật (209 model) *bên trong* handler đó. Lúc resolve scope chỉ có 2 model fallback tĩnh, nên `devin/swe-*` fail với `Warning: No models match pattern`. Bản vá cho factory của extension thành `async` và khám phá model trước `pi.registerProvider`; pi await factory trước khi resolve scope.
+
+```bash
+sh ~/.pi/agent/patches/reapply-devin-early-discovery.sh   # sau `pi update` / cài lại package
+sh ~/.pi/agent/patches/check-devin-early-discovery.sh     # kiểm tra (exit 1 = chưa vá)
+```
+
+> ⚠ Bản vá nằm trong `node_modules` — npm ghi đè mỗi lần `pi update` → **chạy lại script re-apply**, hoặc bỏ `devin/swe-*` khỏi `enabledModels`. Khi upstream sửa (resolve scope sau khi provider ổn định) thì không cần bản vá này nữa. `pi-setup-restore.sh` báo trạng thái bản vá của đích restore ở bước 5.
+
 ### `pi-setup-backup.sh`
 
-Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `extensions/` — và **luôn lấy cả statusline** (`extensions/pi-footer.json` nằm trong `extensions/`).
+Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `patches/`, `extensions/` — và **luôn lấy cả statusline** (`extensions/pi-footer.json` nằm trong `extensions/`).
 
 > `models.json` trong bundle mang cùng placeholder `$NINEROUTER_API_KEY` như `config/`. Bundle bạn tự tạo copy file live **nguyên bản** — nếu `models.json` của bạn còn key thật thì script quét secret sẽ cảnh báo trước khi bạn publish.
 
@@ -550,10 +579,10 @@ Trước khi ghi đè, `settings.json` **và** `auth.json` (nếu nguồn có) �
 
 Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CODING_AGENT_DIR`, không đụng setup thật.
 
-> ⚠️ Mọi số đo dưới đây lấy trên payload **20 package**. Snapshot hiện tại là **22 package** (thêm `pi-browser-use`, `@injaneity/pi-computer-use`) nên **chưa được đo lại**.
+> ⚠️ Các dòng đánh dấu **(2026-09-23)** được đo lại trên snapshot hiện tại (22 package); các dòng còn lại đo trên payload 20 package trước đó.
 
 | Kiểm tra | Kết quả |
-|---|---|
+| --- | --- |
 | Thời gian cài lần đầu | **136–246 s** qua các lần chạy thật (tuỳ tốc độ npm; 335 s khi npm cache nguội) |
 | Module dirs trong `npm/node_modules` | **0 → 203** (snapshot 20 package) |
 | `--verify` | **20/20** ở lần chạy gần nhất (pi-lens + pi-todo + notify), **19/19 · 18/18 · 17/17 · 16/16** ở các snapshot trước |
@@ -564,7 +593,9 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 | Clone repo public rồi restore | ✅ 11 file, 0 file bị loại, 153 s, verify khớp, 0 lỗi |
 | `auth.json` trong dir mới | `{}` → không rò secret |
 | Chạy lần 2 | log rỗng → idempotent |
-| Backup 2 lần liên tiếp | **byte-identical** (deterministic) |
+| Backup 2 lần liên tiếp | **byte-identical** (deterministic) **(2026-09-23)** |
+| `config/` mirror ≡ setup live | ✅ `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/`, `patches/`, `kitty.conf` **giống từng byte** sau khi mirror **(2026-09-23)** |
+| `.pi-setup-exclude` phủ đủ | ✅ mirror báo **83 file bị loại** thuộc `orca-*` / `agentkit-*` / `herdr-*` / state advisor **(2026-09-23)** |
 | `context-bar` render | ✅ gọi trực tiếp `render()`: 0/25/**71%→vàng**/**92%→đỏ**/100%, scale đúng theo 200k và 1m |
 | `--no-statusline` | ✅ `pi-footer.json` biến mất khỏi bundle (SHA khác bản mặc định) |
 | `--hooks` + `.pi-setup-exclude` | ✅ hooks sống sót, in cảnh báo "ghi đè", 54 file còn lại |

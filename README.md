@@ -4,7 +4,7 @@
 
 **A portable snapshot of a [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 22 extensions on a new machine.**
 
-pi `0.85.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-09-16
+pi `0.87.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-09-23
 
 **English** · [Tiếng Việt](./README.vi.md)
 
@@ -29,7 +29,7 @@ The mechanism: `settings.json` holds a `packages` array; pi reads it on startup 
 
 ```bash
 # 1) install pi, exact version
-npm i -g @earendil-works/pi-coding-agent@0.85.1
+npm i -g @earendil-works/pi-coding-agent@0.87.1
 
 # 2) clone
 git clone https://github.com/hvantoan/pi-setup.git
@@ -82,7 +82,7 @@ The full Windows sequence:
 ```bash
 # inside Git Bash
 fnm use 24
-npm i -g @earendil-works/pi-coding-agent@0.85.1
+npm i -g @earendil-works/pi-coding-agent@0.87.1
 git clone https://github.com/hvantoan/pi-setup.git && cd pi-setup
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # rehearsal
 ./scripts/pi-setup-restore.sh --install --verify                                 # for real
@@ -137,11 +137,18 @@ pi-setup/
     ├── APPEND_SYSTEM.md            extra system prompt
     ├── models.json                 provider 9router (baseUrl `http://127.0.0.1:20128/v1`, key via `$NINEROUTER_API_KEY`)
     ├── models-store.json           model catalog (saves the 4h refresh wait)
+    ├── kitty.conf                  kitty terminal config (lives in ~/.config/kitty/)
     ├── model-fallback/
     │   └── config.json            pi-model-fallback rules (state.json is not taken)
+    ├── patches/                    node_modules patches (see "Patched packages")
+    │   ├── pi-devin-provider-index.ts          patched extension file
+    │   ├── reapply-devin-early-discovery.sh    re-apply after pi update
+    │   └── check-devin-early-discovery.sh      one runnable check (PASS/FAIL)
     └── extensions/                 locally written extensions, not on npm
         ├── pi-footer-cache-tps.ts  pushes cache-TTL + token speed (t/s) into pi-footer
-        └── pi-footer.json          statusline layout (includes the context bar)
+        ├── pi-footer.json          statusline layout (includes the context bar)
+        └── pi-tool-display/
+            └── config.json        pi-tool-display output modes + diff view
 ```
 
 `config/` is a **mirror** of the setup portion of `~/.pi/agent`. Everything else (cache, secrets, history) is **not** included.
@@ -152,14 +159,15 @@ pi-setup/
 |---|---|---|
 | `extensions/orca-*.ts` (3 files, 1,239 lines) | Orca (`@orca-managed-pi-extension`) | Orca integration glue; Orca regenerates it when it manages pi |
 | `extensions/agentkit-agent/`, `extensions/agentkit-hooks-engineer/` | AgentKit (`ak`) | 1.2 MB of generated hooks plus caches holding **absolute paths** (`native-skill-paths.json`, 157 KB); `ak` reinstalls them |
+| `extensions/herdr-agent-state.ts` | herdr | Header says *"managed by herdr; reinstalling or updating the integration overwrites this file"* → a copy in git goes stale |
 | `missions/`, `memory/`, `skills/` | pi / AgentKit | machine-specific state, not setup |
 
 ### `.pi-setup-exclude`
 
-`scripts/pi-setup-backup.sh --config-dir config` reads this file (one glob per line, `#` for comments) and deletes every match after mirroring. That is why re-running the backup never drags `orca-*`/`agentkit-*` back into the repo:
+`scripts/pi-setup-backup.sh --config-dir config` reads this file (one glob per line, `#` for comments) and deletes every match after mirroring. That is why re-running the backup never drags `orca-*`/`agentkit-*`/`herdr-*` back into the repo:
 
 ```bash
-./scripts/pi-setup-backup.sh --config-dir config   # → "excluded: 82 files matched .pi-setup-exclude"
+./scripts/pi-setup-backup.sh --config-dir config   # → "excluded: 83 files matched .pi-setup-exclude"
 ```
 
 The same file also works for **tarball mode** via `--exclude-file`:
@@ -169,9 +177,9 @@ The same file also works for **tarball mode** via `--exclude-file`:
   --exclude-file config/.pi-setup-exclude
 ```
 
-### A config that cannot be backed up: `@pi-unipi/notify`
+### A config that deliberately cannot be backed up: `@pi-unipi/notify`
 
-`~/.unipi/config/notify/config.json` contains a **Gotify token** and **Telegram botToken + chatId**, so it is **deliberately absent** from `EXTERNAL_CONFIGS` — committing it would leak credentials to a public repo. Set it up again on the new machine:
+`@pi-unipi/notify` is **not in this snapshot** (dropped from `settings.json`), but if you add it back, its config at `~/.unipi/config/notify/config.json` contains a **Gotify token** and **Telegram botToken + chatId**, so it stays **deliberately absent** from `EXTERNAL_CONFIGS` — committing it would leak credentials to a public repo. Set it up on the machine itself:
 
 ```bash
 /unipi:notify-set-gotify     # configure the Gotify server
@@ -189,6 +197,7 @@ A few extensions keep config **outside** `~/.pi/agent/`, so it cannot be collect
 # in scripts/pi-setup-backup.sh
 EXTERNAL_CONFIGS=(
 	"~/.pi-lens/config.json:pi-lens-config.json"
+	"~/.config/kitty/kitty.conf:kitty.conf"
 )
 ```
 
@@ -207,7 +216,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-A ready-made bundle so you don't have to clone and run the backup yourself: **11 files** — `settings.json` (22 packages), `APPEND_SYSTEM.md`, `models.json` (9router provider), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, and `model-fallback/config.json`.
+A ready-made bundle so you don't have to clone and run the backup yourself: **15 files** — `settings.json` (22 packages), `APPEND_SYSTEM.md`, `models.json` (9router provider), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json`, `patches/` (3 files), and `model-fallback/config.json`.
 
 It is the script's full default bundle, **filtered** through `.pi-setup-exclude` so machine-only material never reaches this public repo:
 
@@ -215,6 +224,7 @@ It is the script's full default bundle, **filtered** through `.pi-setup-exclude`
 |---|---|
 | `extensions/orca-*.ts` (3 files, 1,239 lines) | Orca-generated code — deliberately kept out of the public repo |
 | `extensions/agentkit-*` (95 files) | Contains `native-skill-paths.json` + `native-skill-hashes.json` (**absolute paths**, a list of 107 skills) and `hooks/.logs/hook-log.jsonl` (activity log) |
+| `extensions/herdr-agent-state.ts` | herdr-generated (v9) and overwritten on every herdr update |
 
 Restoring this bundle yields the same file set as `config/` — all 22 extensions plus the statusline. It is a snapshot of this machine, so its `settings.json` can differ from `config/settings.json` in keys changed afterwards (e.g. default model, TUI mode). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
 
@@ -224,32 +234,32 @@ Restoring this bundle yields the same file set as `config/` — all 22 extension
 
 | # | Package | Version | What it does |
 |---|---|---|---|
-| 1 | `pi-web-access` | 0.29.0 | web search, URL fetch, GitHub repo cloning, PDF reading, YouTube + local video understanding |
-| 2 | `pi-mcp-adapter` | 2.34.0 | MCP (Model Context Protocol) adapter |
-| 3 | `pi-subagents` | 0.68.0 | subagent delegation + scripted multi-agent workflows |
-| 4 | `pi-goal-x` | 0.31.4 | `/goal`: goal planning, durable progress, an auditor that checks completion |
-| 5 | `pi-background-tasks` | 2.5.0 | background shell tasks, read-only delegated agents, attested runs, Fusion workflows |
-| 6 | `pi-model-fallback` | 0.4.0 | switches to a fallback model by **rule** (provider/model + HTTP status 429/5xx) on provider failure; durable state with cooldowns; configured through the `model_fallback_config` tool |
-| 7 | `@narumitw/pi-usage` | 0.60.8 | account usage display + DeepSeek API balance |
+| 1 | `pi-web-access` | 0.30.0 | web search, URL fetch, GitHub repo cloning, PDF reading, YouTube + local video understanding |
+| 2 | `pi-mcp-adapter` | 2.36.0 | MCP (Model Context Protocol) adapter |
+| 3 | `pi-subagents` | 0.70.1 | subagent delegation + scripted multi-agent workflows |
+| 4 | `pi-goal-x` | 0.31.8 | `/goal`: goal planning, durable progress, an auditor that checks completion |
+| 5 | `pi-background-tasks` | 2.6.3 | background shell tasks, read-only delegated agents, attested runs, Fusion workflows |
+| 6 | `pi-model-fallback` | 0.5.0 | switches to a fallback model by **rule** (provider/model + HTTP status 429/5xx) on provider failure; durable state with cooldowns; configured through the `model_fallback_config` tool |
+| 7 | `@narumitw/pi-usage` | 0.60.11 | account usage display + DeepSeek API balance |
 | 8 | `pi-simplify` | 0.2.3 | reviews just-changed code for clarity, consistency, maintainability |
 | 9 | `pi-footer` | 0.5.1 | multi-row, customisable statusline (used by this repo) |
-| 10 | `pi-powerline-footer` | 0.17.1 | powerline-style status bar (currently **off** via `"extensions": []`) |
+| 10 | `pi-powerline-footer` | 0.17.2 | powerline-style status bar (currently **off** via `"extensions": []`) |
 | 11 | `pi-memory` | 0.4.2 | memory + semantic search (qmd) over daily log / long-term / scratchpad |
 | 12 | `pi-worktree` | 1.3.3 | git worktree management, isolated workspaces in one command |
-| 13 | `@99percentpeople/pi-todo` | 1.2.7 | minimal atomic todo: removal by omission, state survives compaction, dependencies, read-only widget |
-| 14 | `@juicesharp/rpiv-ask-user-question` | 2.10.1 | asks you through multiple-choice questionnaires instead of guessing |
-| 15 | `@juicesharp/rpiv-btw` | 2.10.1 | `/btw`: quick one-off question answered by the main model without polluting the conversation |
-| 16 | `@pi-unipi/notify` | 2.17.0 | notifications when an agent finishes or fails: native OS, Gotify, Telegram, ntfy, routed per event type (⚠ config holds credentials — never backed up) |
-| 17 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` with a desktop-browser TLS fingerprint + defuddle content extraction |
-| 18 | `pi-advisor-flow` | 0.6.0 | Executor/Advisor flow: a second opinion from a stronger model, with review gates before planning / after repeated failures / before declaring done |
-| 19 | `@tmustier/pi-session-recap` | 0.5.0 | "while you were away" recap: drafts a short summary when you leave a session and shows it at the end of the transcript / above the editor when you return. Built for many parallel agents |
-| 20 | `pi-lens` | 4.1.6 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
-| 21 | `pi-browser-use` | 0.11.7 | agent browser via `chrome-devtools-mcp` (not Playwright): Pi's own headless Chrome on a dedicated `~/.pi/browser-profile` (log in once with `browser_setup`), isolated `fresh` mode, `browser_*` tools plus the bundled `browser-policy` skill. Needs Node ≥ 24 and Chrome stable. Run `browser_doctor` for self-diagnostics |
-| 22 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
+| 13 | `@99percentpeople/pi-todo` | 1.2.8 | minimal atomic todo: removal by omission, state survives compaction, dependencies, read-only widget |
+| 14 | `@juicesharp/rpiv-ask-user-question` | 2.11.0 | asks you through multiple-choice questionnaires instead of guessing |
+| 15 | `@juicesharp/rpiv-btw` | 2.11.0 | `/btw`: quick one-off question answered by the main model without polluting the conversation |
+| 16 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` with a desktop-browser TLS fingerprint + defuddle content extraction |
+| 17 | `pi-advisor-flow` | 0.8.0 | Executor/Advisor flow: a second opinion from a stronger model, with review gates before planning / after repeated failures / before declaring done |
+| 18 | `@tmustier/pi-session-recap` | 0.5.1 | "while you were away" recap: drafts a short summary when you leave a session and shows it at the end of the transcript / above the editor when you return. Built for many parallel agents |
+| 19 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
+| 20 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
+| 21 | `pi-devin-provider` | 0.1.0 | adds the `devin` provider (Devin's model catalogue) and keeps `devin/swe-*` in the model rotation. Requires the local patch below — without it the scope pattern does not resolve |
+| 22 | `pi-tool-display` | 0.5.0 | replaces the built-in rendering of `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` with compact summaries (`summary`/`count`/`bars` modes), collapsible bash output and a side-by-side diff view. Configured in `config/extensions/pi-tool-display/config.json` |
 
-> Versions are **for reference at snapshot time**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
+> Versions are **for reference at snapshot time (2026-09-23)**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
-Default: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Enabled models: `9router/ol/deepseek-v4.1-flash` and `9router/flash` (9router's auto-fallback combo).
+Default: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Enabled models: `9router/ol/deepseek-v4.1-flash`, `9router/flash` (9router's auto-fallback combo) and `devin/swe-*` (requires the patch below).
 
 ---
 
@@ -500,9 +510,28 @@ node scripts/pi-lens-compact-lsp-status.mjs --revert  # restore the original bun
 
 > ⚠ npm overwrites `pi-lens/dist/index.js` on every `pi update` or pi-lens reinstall → **re-run this script**. That is why a patch script lives in this snapshot repo. An upstream request for a first-class option is filed.
 
+### `patches/` — patched packages
+
+The snapshot contains one other patch, in `~/.pi/agent/patches/` (mirrored to `config/patches/`):
+
+| File | What it is |
+|---|---|
+| `pi-devin-provider-index.ts` | patched copy of `pi-devin-provider/extensions/devin/index.ts` |
+| `reapply-devin-early-discovery.sh` | copies the patched file back over the npm one |
+| `check-devin-early-discovery.sh` | one runnable check — `PASS: devin/swe-2-* resolves at startup` / `FAIL` |
+
+**Why:** pi resolves the `enabledModels` / `--models` scope against the model catalogue **before** any extension `session_start` handler runs, while `pi-devin-provider` discovers its real list (209 models) *inside* that handler. At scope-resolution time only its two static fallbacks exist, so `devin/swe-*` fails with `Warning: No models match pattern`. The patch makes the extension factory `async` and discovers models before `pi.registerProvider`, and pi awaits the factory before resolving the scope.
+
+```bash
+sh ~/.pi/agent/patches/reapply-devin-early-discovery.sh   # after `pi update` / reinstalling the package
+sh ~/.pi/agent/patches/check-devin-early-discovery.sh     # verify (exit 1 = not applied)
+```
+
+> ⚠ The patch lives in `node_modules`, which npm rewrites on every `pi update` → **re-run the re-apply script**, or drop `devin/swe-*` from `enabledModels`. An upstream fix (resolve the scope after providers settle) would remove the need for this patch. `pi-setup-restore.sh` reports the patch state of the restore target as its step 5.
+
 ### `pi-setup-backup.sh`
 
-By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`).
+By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `patches/`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`).
 
 > The bundled `models.json` carries the same `$NINEROUTER_API_KEY` placeholder as `config/`. A bundle you build yourself copies the live file **verbatim** — if your `models.json` still holds a literal key, the script's secret scan warns before you publish it.
 
@@ -553,7 +582,7 @@ Before overwriting, `settings.json` **and** `auth.json` (when present in the sou
 
 Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, never touching the real setup.
 
-> ⚠️ Every number below was measured on the **20-package** payload. The current snapshot has **22 packages** (added `pi-browser-use` and `@injaneity/pi-computer-use`) and has **not been re-measured**.
+> ⚠️ Every number below was measured on the **20-package** payload, except the rows marked **(2026-09-23)**, which were re-checked against the current 22-package snapshot.
 
 | Check | Result |
 |---|---|
@@ -567,7 +596,9 @@ Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, n
 | Clone the public repo and restore | ✅ 11 files, 0 excluded, 153 s, verify matched, 0 errors |
 | `auth.json` in the new dir | `{}` → no secret leakage |
 | Second run | empty log → idempotent |
-| Two consecutive backups | **byte-identical** (deterministic) |
+| Two consecutive backups | **byte-identical** (deterministic) **(2026-09-23)** |
+| `config/` mirror ≡ live setup | ✅ `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/`, `patches/`, `kitty.conf` all byte-identical to `~/.pi/agent` after the mirror **(2026-09-23)** |
+| `.pi-setup-exclude` coverage | ✅ mirror reports **83 excluded files** across `orca-*` / `agentkit-*` / `herdr-*` / advisor outcome state **(2026-09-23)** |
 | `context-bar` rendering | ✅ direct `render()` call: 0/25/**71%→yellow**/**92%→red**/100%, correctly scaled for 200k and 1M |
 | `--no-statusline` | ✅ `pi-footer.json` disappears from the bundle (different SHA than the default) |
 | `--hooks` + `.pi-setup-exclude` | ✅ hooks survive, "override" warning printed, 54 files remain |

@@ -1,6 +1,6 @@
 # Hướng dẫn migrate setup `pi` sang máy khác
 
-> Cập nhật: **2026-09-15** · pi `0.85.1` · Node `v24.19.0`
+> Cập nhật: **2026-09-23** · pi `0.87.1` · Node `v24`
 > Repo: `pi-setup` — công cụ + snapshot setup, dùng để dựng lại nguyên bộ extension `pi` trên máy khác.
 
 ---
@@ -10,7 +10,7 @@
 **Máy mới:**
 
 ```bash
-npm i -g @earendil-works/pi-coding-agent@0.85.1   # cài pi trước (đúng version)
+npm i -g @earendil-works/pi-coding-agent@0.87.1   # cài pi trước (đúng version)
 git clone https://github.com/hvantoan/pi-setup.git
 cd pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
@@ -45,13 +45,15 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 | `settings.json` | 4 KB | ✅ **bắt buộc** | 22 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
 | `models.json` | 1.3 KB | ✅ **bắt buộc** | khai báo provider **9router** (baseUrl `http://127.0.0.1:20128/v1`, `api: openai-completions`) + 4 model. `apiKey` để dạng `$NINEROUTER_API_KEY` → repo không chứa credential. Không có file này thì `9router` là provider lạ, `pi --list-models` không thấy model nào |
-| `extensions/` | 1.3 MB | ✅ (lọc) | extension tự viết local + config của chúng. `orca-*.ts` (Orca sinh) và `agentkit-*` (AgentKit sinh) bị loại — xem `.pi-setup-exclude` |
+| `extensions/` | 1.4 MB | ✅ (lọc) | extension tự viết local + config của chúng (`pi-footer.json`, `pi-footer-cache-tps.ts`, `pi-tool-display/config.json`). `orca-*.ts` (Orca sinh), `agentkit-*` (AgentKit sinh) và `herdr-agent-state.ts` (herdr sinh) bị loại — xem `.pi-setup-exclude` |
 | `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
 | `model-fallback/config.json` | — | ✅ **mặc định** | rule của `pi-model-fallback`, ở thư mục `model-fallback/` (không trong `extensions/`) nên liệt kê riêng; **chỉ lấy file config** — `state.json` cùng thư mục là state theo máy (entry + mốc cooldown), không đưa vào artifact |
 | `extensions/*/hooks/` | 544 KB | ⚠️ opt-in | `--hooks` (mặc định đã nằm trong `extensions/` khi không lọc) |
-| `models-store.json` | 28 KB | ✅ | catalog model; có sẵn thì khỏi chờ refresh 4 giờ |
+| `models-store.json` | 61 KB | ✅ | catalog model; có sẵn thì khỏi chờ refresh 4 giờ |
+| `patches/` | 16 KB | ✅ **mặc định** | bản vá `pi-devin-provider` (khám phá model sớm) + script re-apply/check. Không có nó thì `devin/swe-*` trong `enabledModels` không resolve — chi tiết ở README mục *`patches/` — package được vá* |
+| `~/.config/kitty/kitty.conf` | 456 B | ✅ **mặc định** | config terminal kitty, nằm **NGOÀI** config dir → lấy qua `EXTERNAL_CONFIGS`, thành `kitty.conf` + dòng tương ứng trong `external-configs.txt` |
 | `99extensions.json` | — | ➖ không có | config họ 99percentpeople (`@99percentpeople/pi-todo`) ở gốc config dir; chỉ sinh ra sau khi dùng `/99settings` nên snapshot này không có. Script vẫn liệt kê, nên nó tự được lấy khi bạn dùng tính năng đó |
-| `~/.unipi/config/notify/config.json` | — | ❌ **credential** | config `@pi-unipi/notify`: chứa token Gotify + botToken/chatId Telegram → **cố ý** không đưa vào; máy mới chạy lại `/unipi:notify-set-gotify` + `/unipi:notify-set-tg` |
+| `~/.unipi/config/notify/config.json` | — | ❌ **credential** | config `@pi-unipi/notify` (package này **đã bỏ khỏi snapshot**, thêm lại bằng tay nếu cần): chứa token Gotify + botToken/chatId Telegram → **cố ý** không đưa vào; chạy `/unipi:notify-set-gotify` + `/unipi:notify-set-tg` trên chính máy đó |
 | `~/.pi-lens/config.json` | 136 B | ✅ **mặc định** | config `pi-lens`, nằm **NGOÀI** config dir → lấy qua `EXTERNAL_CONFIGS`, vào artifact thành `pi-lens-config.json` + manifest `external-configs.txt` (⚠️ **không** đặt tên artifact là `pi-lens.json`: trùng basename legacy của pi-lens → bị đọc như project config deprecated, xem README) |
 | `advisor.json` | — | ✅ **mặc định** | config `pi-advisor-flow`, ở **gốc** config dir (không trong `extensions/`) nên liệt kê riêng; chỉ có sau `/advisor` hoặc `/advisor-settings` |
 | `advisor-outcomes.jsonl`, `advisor-outcomes-salt` | — | ❌ | log outcome + salt theo máy của `pi-advisor-flow` → nằm trong `.pi-setup-exclude` |
@@ -79,19 +81,27 @@ pi-setup/
 ├── scripts/
 │   ├── pi-setup-backup.sh           ← đóng gói setup hiện tại
 │   ├── pi-setup-restore.sh          ← dựng lại trên máy mới
-│   └── pi-setup-verify-advisor.mjs  ← kiểm tra advisor.json theo schema thật
+│   ├── pi-setup-verify-advisor.mjs  ← kiểm tra advisor.json theo schema thật
+│   └── pi-lens-compact-lsp-status.mjs ← vá dòng status LSP của pi-lens cho gọn
 └── config/                          ← snapshot setup, đọc/diff được
     ├── .pi-setup-exclude           ← glob loại trừ (backup tôn trọng file này)
     ├── settings.json
     ├── APPEND_SYSTEM.md
+    ├── advisor.json
     ├── models.json
     ├── models-store.json
+    ├── pi-lens-config.json         ← ~/.pi-lens/config.json (ngoài config dir)
+    ├── kitty.conf                  ← ~/.config/kitty/kitty.conf (ngoài config dir)
+    ├── external-configs.txt        ← manifest: file nào đặt về đâu khi restore
+    ├── model-fallback/config.json
+    ├── patches/                    ← bản vá node_modules (pi-devin-provider) + script
     └── extensions/
         ├── pi-footer-cache-tps.ts
-        └── pi-footer.json
+        ├── pi-footer.json
+        └── pi-tool-display/config.json
 ```
 
-`config/` là **mirror** của `~/.pi/agent` (chỉ 4 mục setup). Cập nhật lại sau khi bạn đổi setup:
+`config/` là **mirror** của `~/.pi/agent` (chỉ các mục setup). Cập nhật lại sau khi bạn đổi setup:
 
 ```bash
 ./scripts/pi-setup-backup.sh --config-dir config
@@ -104,15 +114,15 @@ git add -A && git commit -m "chore(setup): refresh pi config snapshot" && git pu
 
 ```bash
 nvm install 24 && nvm use 24                        # pi cài global theo từng Node version
-npm i -g @earendil-works/pi-coding-agent@0.85.1
-pi --version                                        # phải ra 0.85.1
+npm i -g @earendil-works/pi-coding-agent@0.87.1
+pi --version                                        # phải ra 0.87.1
 ```
 
 ```bash
 # Windows (Git Bash) — thường dùng fnm thay nvm
 fnm install 24 && fnm use 24
-npm i -g @earendil-works/pi-coding-agent@0.85.1
-pi --version                                        # phải ra 0.85.1
+npm i -g @earendil-works/pi-coding-agent@0.87.1
+pi --version                                        # phải ra 0.87.1
 ```
 
 > pi cài **theo từng Node version** của `nvm`/`fnm`. Nếu sau này `nvm use` / `fnm use` sang version khác mà không thấy lệnh `pi`, đó là lý do — cài lại global cho version đó.
@@ -335,11 +345,11 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | `auth.json` trong dir mới | `{}` → **không rò secret** |
 | Chạy lần 2 | log rỗng (0 byte) → **idempotent** |
 
-### Đường `--from-config config` (payload 20 package lúc đo — 2026-09-15; snapshot hiện tại là 22 package, **chưa đo lại**)
+### Đường `--from-config config` (22 package, số cũ đo trên payload 20 package — 2026-09-15)
 
 | Kiểm tra | Kết quả |
-|---|---|
-| Restore vào dir mới | ✅ `settings.json APPEND_SYSTEM.md models-store.json advisor.json extensions` + config ngoài `~/.pi-lens/config.json` |
+| --- | --- |
+| Restore vào dir mới | ✅ `settings.json APPEND_SYSTEM.md models-store.json advisor.json patches extensions` + config ngoài `~/.pi-lens/config.json`, `~/.config/kitty/kitty.conf` |
 | Cài 20 extension | ✅ **246 s**, module dirs `0 → 203` |
 | `--verify` | ✅ **`20/20 extension khớp`** |
 | Extension có **chạy** không | ✅ 18 `extension_ui_request`, 0 lỗi load, thấy `pi-lens-lsp` |
@@ -494,7 +504,7 @@ loại trừ: 82 file khớp .pi-setup-exclude (extensions/orca-*.ts extensions/
 
 ## Checklist
 
-- [ ] Máy mới: Node đúng version (`nvm` — hoặc `fnm` trên Windows) → `npm i -g @earendil-works/pi-coding-agent@0.85.1`
+- [ ] Máy mới: Node đúng version (`nvm` — hoặc `fnm` trên Windows) → `npm i -g @earendil-works/pi-coding-agent@0.87.1`
 - [ ] **Windows:** đang ở trong **Git Bash** (không PowerShell/cmd)
 - [ ] `git clone https://github.com/hvantoan/pi-setup.git`
 - [ ] `./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify` (thử an toàn)
