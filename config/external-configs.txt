@@ -1,1 +1,2 @@
 pi-lens-config.json=~/.pi-lens/config.json
+kitty.conf=~/.config/kitty/kitty.conf

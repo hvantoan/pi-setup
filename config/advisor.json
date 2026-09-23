@@ -1,7 +1,6 @@
 {
   "alwaysOn": true,
   "advisorOutcomeLogging": false,
-  "advisorEffort": "low",
   "advisorScoutEnabled": true,
   "showUsageFooter": true,
   "advisorRedactSecrets": true,
