@@ -2,9 +2,9 @@
 
 # pi-setup
 
-**Portable snapshot của một setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 22 extensions trên máy mới.**
+**Portable snapshot của một setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 21 extensions trên máy mới.**
 
-pi `0.87.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-23
+pi `0.87.1` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-09-28
 
 [English](./README.md) · **Tiếng Việt**
 
@@ -129,7 +129,7 @@ pi-setup/
 │   └── pi-setup-portable.tar.gz     bundle sẵn để tải (đã lọc — xem bên dưới)
 └── config/                          snapshot setup (plain file, diff được bằng git)
     ├── .pi-setup-exclude           glob loại trừ — backup tôn trọng file này
-    ├── settings.json               manifest 22 packages + model/theme/compaction
+    ├── settings.json               manifest 21 packages + model/theme/compaction
     ├── advisor.json                config pi-advisor-flow (ở gốc config dir)
     ├── pi-lens-config.json          config pi-lens — nằm ở ~/.pi-lens/ NGOÀI config dir
     ├── external-configs.txt        manifest: file nào đặt về đâu khi restore
@@ -162,8 +162,10 @@ pi-setup/
 `scripts/pi-setup-backup.sh --config-dir config` đọc file này (mỗi dòng 1 glob, `#` = comment) và xoá mọi file khớp sau khi mirror. Nhờ vậy chạy backup lại cũng không tự thêm `orca-*`/`agentkit-*` trở lại repo:
 
 ```bash
-./scripts/pi-setup-backup.sh --config-dir config   # → "loại trừ: 82 file khớp .pi-setup-exclude"
+./scripts/pi-setup-backup.sh --config-dir config --exclude-file config/.pi-setup-exclude   # → "loại trừ: 93 file khớp .pi-setup-exclude"  (2026-09-28)
 ```
+
+> Ở chế độ `--config-dir`, file exclude được tự dò từ `config/.pi-setup-exclude`; truyền thẳng đường dẫn chỉ để lệnh trên tự đứng một mình, không phụ thuộc cwd/thứ tự dò.
 
 Từ bản hiện tại, cùng file đó cũng dùng được cho **chế độ tarball** qua `--exclude-file`:
 
@@ -221,21 +223,21 @@ Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **12 file** (m�
 | `extensions/agentkit-*` (95 file) | chứa `native-skill-paths.json` + `native-skill-hashes.json` (**path tuyệt đối**, danh sách 107 skill) và `hooks/.logs/hook-log.jsonl` (log hoạt động) |
 | `extensions/herdr-agent-state.ts` | herdr sinh (v9), bị ghi đè mỗi lần herdr update |
 
-Restore bundle này cho cùng bộ file như `config/` — đủ 22 extension + statusline. Đây là snapshot của máy, nên `settings.json` trong bundle có thể khác `config/settings.json` ở những key bạn đổi sau đó (ví dụ model mặc định, TUI mode). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
+Restore bundle này cho cùng bộ file như `config/` — đủ 21 extension + statusline. Đây là snapshot của máy, nên `settings.json` trong bundle có thể khác `config/settings.json` ở những key bạn đổi sau đó (ví dụ model mặc định, TUI mode). Muốn bundle không lọc (giữ cả state của máy) thì bỏ `--exclude-file`.
 
 ---
 
-## 22 extensions trong snapshot
+## 21 extensions trong snapshot
 
 | # | Package | Version | Làm gì |
 |---|---|---|---|
-| 1 | `pi-web-access` | 0.30.0 | web search, fetch URL, clone GitHub repo, đọc PDF, hiểu YouTube + video local |
-| 2 | `pi-mcp-adapter` | 2.36.0 | adapter MCP (Model Context Protocol) |
-| 3 | `pi-subagents` | 0.70.1 | delegate cho subagent + workflow multi-agent bằng script |
-| 4 | `pi-goal-x` | 0.31.8 | `/goal`: lập kế hoạch mục tiêu, tiến độ bền, auditor kiểm tra hoàn thành |
-| 5 | `pi-background-tasks` | 2.6.3 | task shell chạy nền, delegated agent read-only, attested run, Fusion workflow |
+| 1 | `pi-web-access` | 0.31.0 | web search, fetch URL, clone GitHub repo, đọc PDF, hiểu YouTube + video local |
+| 2 | `pi-mcp-adapter` | 2.37.0 | adapter MCP (Model Context Protocol) |
+| 3 | `pi-subagents` | 0.71.0 | delegate cho subagent + workflow multi-agent bằng script |
+| 4 | `pi-goal-x` | 0.31.9 | `/goal`: lập kế hoạch mục tiêu, tiến độ bền, auditor kiểm tra hoàn thành |
+| 5 | `pi-background-tasks` | 2.6.5 | task shell chạy nền, delegated agent read-only, attested run, Fusion workflow |
 | 6 | `pi-model-fallback` | 0.5.0 | chuyển sang model fallback theo **rule** (provider/model + HTTP status 429/5xx) khi provider lỗi; state bền có cooldown; config bằng tool `model_fallback_config` |
-| 7 | `@narumitw/pi-usage` | 0.60.11 | hiển thị usage của account + số dư DeepSeek API |
+| 7 | `@narumitw/pi-usage` | 0.61.1 | hiển thị usage của account + số dư DeepSeek API |
 | 8 | `pi-simplify` | 0.2.3 | review code vừa đổi theo hướng rõ ràng / nhất quán / dễ bảo trì |
 | 9 | `pi-footer` | 0.5.1 | statusline nhiều dòng, tuỳ biến được (dùng trong repo này) |
 | 10 | `pi-powerline-footer` | 0.17.2 | status bar kiểu powerline (đang **tắt** bằng `"extensions": []`) |
@@ -245,13 +247,13 @@ Restore bundle này cho cùng bộ file như `config/` — đủ 22 extension + 
 | 14 | `@juicesharp/rpiv-ask-user-question` | 2.11.0 | hỏi bạn bằng questionnaire có lựa chọn thay vì đoán |
 | 15 | `@juicesharp/rpiv-btw` | 2.11.0 | `/btw`: hỏi nhanh 1 câu bằng chính model chính, không làm bẩn conversation |
 | 16 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` giả TLS desktop browser + trích nội dung bằng defuddle |
-| 17 | `pi-advisor-flow` | 0.8.0 | flow Executor/Advisor: ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc |
+| 17 | `pi-advisor-flow` | 0.8.2 | flow Executor/Advisor: ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc |
 | 18 | `@tmustier/pi-session-recap` | 0.5.1 | recap “while you were away”: soạn sẵn bản tóm tắt khi bạn rời session, hiện ở cuối transcript / trên editor lúc quay lại. Cho workflow nhiều agent chạy song song |
 | 19 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checker, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. Trong setup này đã tắt widget + autoformat + autofix (xem mục riêng) |
 | 20 | `@injaneity/pi-computer-use` | 0.5.1 | cho agent điều khiển app desktop trên macOS, Windows và Linux qua accessibility API của hệ điều hành: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Cài helper riêng cho user ở `~/Applications/pi-computer-use.app`; macOS cần cấp **Accessibility** + **Screen Recording** cho helper, và bước setup chỉ chạy trong session pi tương tác → ở chế độ `-p` (print) extension chưa làm được gì cho tới khi bạn cấp quyền |
 | 21 | `pi-tool-display` | 0.5.0 | thay cách render mặc định của `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` bằng bản tóm tắt gọn (`summary`/`count`/`bars`), bash output thu gọn được và diff view 2 cột. Config ở `config/extensions/pi-tool-display/config.json` |
 
-> Version là **tham khảo tại thời điểm snapshot (2026-09-23)**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
+> Version là **tham khảo tại thời điểm snapshot (2026-09-28)**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
 Provider mặc định: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Model đang bật: `9router/*` và `openai-codex/*` (provider Devin đã bị gỡ — không còn package lẫn bản vá).
 Auto-compact bật khi vượt **200K token** với mọi model còn đủ chỗ: pi compact khi `contextTokens > contextWindow - reserveTokens`, nên model 9router (context 1M) có `reserveTokens: 800000` riêng, còn model `openai-codex` (context 272K) có `72000`. Riêng `gpt-5.3-codex-spark` chỉ 128K context nên **không** đặt override — nó giữ mức mặc định 16384.
@@ -407,7 +409,9 @@ Flow **Executor / Advisor**: model đang chạy việc (Executor) có thể xin 
 /advisor-settings   # cấu hình behavior, context, privacy, limits
 ```
 
-Config toàn cục ở **`~/.pi/agent/advisor.json`** — nằm ở **gốc** config dir, **không** trong `extensions/`, nên backup phải liệt kê riêng (đã làm). Project có thể override bằng `<project>/.pi/advisor.json`.
+Config toàn cục ở **`~/.pi/agent/advisor.json`** — nằm ở **gốc** config dir, **không** trong `extensions/`, nên backup phải liệt kê riêng (đã làm).
+
+> **Không có project override trong 0.8.x.** `advisor.json` chỉ được đọc từ config dir toàn cục: tài liệu upstream ghi rõ *"Repository-controlled project `advisor.json` files are not applied. Models, prompts, gates, budgets, disclosure, redaction, integrations, and consent remain under the user's global configuration."* Đừng dựa vào `<project>/.pi/advisor.json` — extension chỉ báo key lạ rồi bỏ qua, file **không có hiệu lực**.
 
 Extension này còn công bố 2 status key (`advisor-scout`, `advisor-usage`) — đã được đưa vào `hiddenKeys` + widget inline như 9 key kia, để hàng status không quay lại khi Advisor đang chạy.
 
@@ -571,8 +575,9 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 | `auth.json` trong dir mới | `{}` → không rò secret |
 | Chạy lần 2 | log rỗng → idempotent |
 | Backup 2 lần liên tiếp | **byte-identical** (deterministic) **(2026-09-23)** |
-| `config/` mirror ≡ setup live | ✅ `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/`, `kitty.conf` **giống từng byte** sau khi mirror **(2026-09-23)** |
-| `.pi-setup-exclude` phủ đủ | ✅ mirror báo **83 file bị loại** thuộc `orca-*` / `agentkit-*` / `herdr-*` / state advisor **(2026-09-23)** |
+| `config/` mirror ≡ setup live | ✅ 21 package; `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/` **giống từng byte** với `~/.pi/agent`; `pi-lens-config.json` và `kitty.conf` giống `~/.pi-lens/config.json` / `~/.config/kitty/kitty.conf` **(2026-09-28)** |
+| `models-store.json` là dữ liệu sống, không phải bản chốt | ⚠️ `checkedAt` nhảy mỗi khi pi revalidate catalog model (≈ 4 giờ/lần), nên backup chụp **sau** lần revalidate đó sẽ khác bản trước. Hai backup chạy liền nhau vẫn **giống từng byte**. Nội dung **không chứa credential** |
+| `.pi-setup-exclude` phủ đủ | ✅ mirror báo **93 file bị loại** thuộc `orca-*` / `agentkit-*` / `herdr-*` / state advisor **(2026-09-28)** |
 | `context-bar` render | ✅ gọi trực tiếp `render()`: 0/25/**71%→vàng**/**92%→đỏ**/100%, scale đúng theo 200k và 1m |
 | `--no-statusline` | ✅ `pi-footer.json` biến mất khỏi bundle (SHA khác bản mặc định) |
 | `--hooks` + `.pi-setup-exclude` | ✅ hooks sống sót, in cảnh báo "ghi đè", 54 file còn lại |
@@ -597,7 +602,7 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 |---|---|
 | Ma trận config (chạy thật, so exit code) | ✅ **6/6**: config sạch `0` · key lạ `1` · ngoài enum `1` · sai type `1` · ref thiếu `provider/model` `1` · thiếu `gateFailureMode` vẫn `0` |
 | Nhánh môi trường | ✅ **7/7**: `--live` so 2 file `0` · `--pkg` không tồn tại `2` · bundle không có `CONFIG_SCHEMA` `2` · `--help` `0` · tham số sai `2` · JSON hỏng `1` · file thiếu `1` |
-| Trích schema | ✅ **31 key** từ `CONFIG_SCHEMA` của bundle 0.6.0; bắt đúng `advisorFailureMode` — key mà extension từng cảnh báo (harness khớp output thật) |
+| Trích schema | ✅ **44 key** từ `CONFIG_SCHEMA` của bundle 0.8.2 (0.6.0 là 31); bắt đúng `advisorFailureMode` — key mà extension từng cảnh báo (harness khớp output thật) |
 
 ---
 

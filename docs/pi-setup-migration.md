@@ -16,7 +16,7 @@ cd pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
 ```
 
-Rồi `export NINEROUTER_API_KEY=...` (key của 9router) — **xong**, pi tự cài đủ 22 extensions. Provider built-in khác thì `/login`.
+Rồi `export NINEROUTER_API_KEY=...` (key của 9router) — **xong**, pi tự cài đủ 21 extensions. Provider built-in khác thì `/login`.
 
 **Không cần** copy thư mục `npm/` (244 MB cache) hay `auth.json` (secret).
 
@@ -42,9 +42,9 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 
 | Mục trong `~/.pi/agent/` | Size | Vào repo? | Lý do |
 |---|---|---|---|
-| `settings.json` | 4 KB | ✅ **bắt buộc** | 22 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
+| `settings.json` | 4 KB | ✅ **bắt buộc** | 21 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
-| `models.json` | 1.3 KB | ✅ **bắt buộc** | khai báo provider **9router** (baseUrl `http://127.0.0.1:20128/v1`, `api: openai-completions`) + 4 model. `apiKey` để dạng `$NINEROUTER_API_KEY` → repo không chứa credential. Không có file này thì `9router` là provider lạ, `pi --list-models` không thấy model nào |
+| `models.json` | 1.3 KB | ✅ **bắt buộc** | khai báo provider **9router** (baseUrl `http://127.0.0.1:20128/v1`, `api: openai-completions`) + 2 model (`flash`, `ol/deepseek-v4.1-flash`). `apiKey` để dạng `$NINEROUTER_API_KEY` → repo không chứa credential. Không có file này thì `9router` là provider lạ, `pi --list-models` không thấy model nào |
 | `extensions/` | 1.4 MB | ✅ (lọc) | extension tự viết local + config của chúng (`pi-footer.json`, `pi-footer-cache-tps.ts`, `pi-tool-display/config.json`). `orca-*.ts` (Orca sinh), `agentkit-*` (AgentKit sinh) và `herdr-agent-state.ts` (herdr sinh) bị loại — xem `.pi-setup-exclude` |
 | `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
 | `model-fallback/config.json` | — | ✅ **mặc định** | rule của `pi-model-fallback`, ở thư mục `model-fallback/` (không trong `extensions/`) nên liệt kê riêng; **chỉ lấy file config** — `state.json` cùng thư mục là state theo máy (entry + mốc cooldown), không đưa vào artifact |
@@ -142,7 +142,7 @@ Script sẽ:
 
 1. Snapshot `settings.json` hiện có thành `settings.json.bak.<YYYYmmdd-HHMMSS>` (nếu đã tồn tại),
 2. Copy 4 mục setup vào `~/.pi/agent`,
-3. Chạy pi headless 1 lần → pi tự cài 22 extension (~150–220 s; **88 s** trên Windows + Git Bash),
+3. Chạy pi headless 1 lần → pi tự cài 21 extension (~150–220 s; **88 s** trên Windows + Git Bash),
 4. Verify số extension khớp với `settings.json`.
 
 ## Bước 3 — login lại provider
@@ -343,7 +343,7 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 | `auth.json` trong dir mới | `{}` → **không rò secret** |
 | Chạy lần 2 | log rỗng (0 byte) → **idempotent** |
 
-### Đường `--from-config config` (22 package, số cũ đo trên payload 20 package — 2026-09-15)
+### Đường `--from-config config` (số cũ đo trên payload 20 package — 2026-09-15)
 
 | Kiểm tra | Kết quả |
 | --- | --- |
@@ -472,7 +472,7 @@ skills/orca-per-workspace-env -> ../../../.agents/skills/orca-per-workspace-env
 
 **`pi-advisor-flow`.** Flow Executor/Advisor cho ý kiến thứ hai từ model mạnh hơn, có cổng review trước plan / sau lỗi lặp / trước khi kết thúc. Lệnh: `/advisor`, `/advisor-models`, `/advisor-settings`.
 
-Config toàn cục ở `~/.pi/agent/advisor.json` — ở **gốc** config dir, không trong `extensions/`, nên `ITEMS_SETUP` của backup script phải liệt kê riêng (project override bằng `<project>/.pi/advisor.json`).
+Config toàn cục ở `~/.pi/agent/advisor.json` — ở **gốc** config dir, không trong `extensions/`, nên `ITEMS_SETUP` của backup script phải liệt kê riêng. **Không có project override trong 0.8.x**: tài liệu upstream ghi rõ *"Repository-controlled project `advisor.json` files are not applied"* — file `<project>/.pi/advisor.json` chỉ bị báo key lạ rồi bỏ qua, không có hiệu lực.
 
 Extension này công bố thêm 2 status key `advisor-scout` + `advisor-usage`; cả hai đã vào `hiddenKeys` và có widget `external-status` inline → statusline vẫn **3 hàng** kể cả khi Advisor đang chạy (đã test với cả 11 key cùng có giá trị).
 
@@ -491,7 +491,7 @@ Config ngoài config dir được mang theo bằng `EXTERNAL_CONFIGS` + manifest
 `scripts/pi-setup-backup.sh --config-dir config` đọc `config/.pi-setup-exclude` (mỗi dòng 1 glob, `#` = comment) và xoá mọi file khớp sau khi mirror. Nhờ vậy chạy backup lại cũng **không** tự thêm `orca-*`/`agentkit-*` trở lại repo:
 
 ```
-loại trừ: 82 file khớp .pi-setup-exclude (extensions/orca-*.ts extensions/agentkit-*)
+loại trừ: 93 file khớp .pi-setup-exclude   # đo 2026-09-28 — script in kèm danh sách glob, bị lặp 2 lần trong output
 ```
 
 **Không có gì thuộc AgentKit trong repo này.** Bộ skill `ak-*` trong `~/.agents/skills` migrate riêng bằng CLI `ak`.
@@ -506,7 +506,7 @@ loại trừ: 82 file khớp .pi-setup-exclude (extensions/orca-*.ts extensions/
 - [ ] **Windows:** đang ở trong **Git Bash** (không PowerShell/cmd)
 - [ ] `git clone https://github.com/hvantoan/pi-setup.git`
 - [ ] `./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify` (thử an toàn)
-- [ ] `./scripts/pi-setup-restore.sh --install --verify` → phải ra `22/22 extension khớp`
+- [ ] `./scripts/pi-setup-restore.sh --install --verify` → phải ra `21/21 extension khớp`
 - [ ] **Windows/font:** terminal đã dùng **Nerd Font** (bản Mono) hoặc `iconMode` đã đổi sang `emoji`/`text` — nếu không, icon statusline sẽ vỡ
 - [ ] `export NINEROUTER_API_KEY=...` (hoặc lưu vào shell rc) rồi `pi auth check --provider 9router` → `ready`
 - [ ] Thử 1 extension, ví dụ `/btw <câu hỏi>` (cần TUI mode)

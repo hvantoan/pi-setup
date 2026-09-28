@@ -2,9 +2,9 @@
 
 # pi-setup
 
-**A portable snapshot of a [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 22 extensions on a new machine.**
+**A portable snapshot of a [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 21 extensions on a new machine.**
 
-pi `0.87.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-09-23
+pi `0.87.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-09-28
 
 **English** · [Tiếng Việt](./README.vi.md)
 
@@ -130,7 +130,7 @@ pi-setup/
 │   └── pi-setup-portable.tar.gz     ready-to-download bundle (filtered — see below)
 └── config/                          setup snapshot (plain files, git-diffable)
     ├── .pi-setup-exclude           exclusion globs — backup honours this file
-    ├── settings.json               manifest of 22 packages + model/theme/compaction
+    ├── settings.json               manifest of 21 packages + model/theme/compaction
     ├── advisor.json                pi-advisor-flow config (at the config-dir root)
     ├── pi-lens-config.json          pi-lens config — lives in ~/.pi-lens/, OUTSIDE the config dir
     ├── external-configs.txt        manifest: which file goes where on restore
@@ -163,8 +163,10 @@ pi-setup/
 `scripts/pi-setup-backup.sh --config-dir config` reads this file (one glob per line, `#` for comments) and deletes every match after mirroring. That is why re-running the backup never drags `orca-*`/`agentkit-*`/`herdr-*` back into the repo:
 
 ```bash
-./scripts/pi-setup-backup.sh --config-dir config   # → "excluded: 83 files matched .pi-setup-exclude"
+./scripts/pi-setup-backup.sh --config-dir config --exclude-file config/.pi-setup-exclude   # → "excluded: 93 files matched .pi-setup-exclude"  (2026-09-28)
 ```
+
+> In `--config-dir` mode the exclude file is auto-discovered at `config/.pi-setup-exclude`; passing it explicitly just makes the command self-contained regardless of cwd and discovery order.
 
 The same file also works for **tarball mode** via `--exclude-file`:
 
@@ -222,21 +224,21 @@ It is the script's full default bundle, **filtered** through `.pi-setup-exclude`
 | `extensions/agentkit-*` (95 files) | Contains `native-skill-paths.json` + `native-skill-hashes.json` (**absolute paths**, a list of 107 skills) and `hooks/.logs/hook-log.jsonl` (activity log) |
 | `extensions/herdr-agent-state.ts` | herdr-generated (v9) and overwritten on every herdr update |
 
-Restoring this bundle yields the same file set as `config/` — all 22 extensions plus the statusline. It is a snapshot of this machine, so its `settings.json` can differ from `config/settings.json` in keys changed afterwards (e.g. default model, TUI mode). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
+Restoring this bundle yields the same file set as `config/` — all 21 extensions plus the statusline. It is a snapshot of this machine, so its `settings.json` can differ from `config/settings.json` in keys changed afterwards (e.g. default model, TUI mode). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
 
 ---
 
-## The 22 extensions in this snapshot
+## The 21 extensions in this snapshot
 
 | # | Package | Version | What it does |
 |---|---|---|---|
-| 1 | `pi-web-access` | 0.30.0 | web search, URL fetch, GitHub repo cloning, PDF reading, YouTube + local video understanding |
-| 2 | `pi-mcp-adapter` | 2.36.0 | MCP (Model Context Protocol) adapter |
-| 3 | `pi-subagents` | 0.70.1 | subagent delegation + scripted multi-agent workflows |
-| 4 | `pi-goal-x` | 0.31.8 | `/goal`: goal planning, durable progress, an auditor that checks completion |
-| 5 | `pi-background-tasks` | 2.6.3 | background shell tasks, read-only delegated agents, attested runs, Fusion workflows |
+| 1 | `pi-web-access` | 0.31.0 | web search, URL fetch, GitHub repo cloning, PDF reading, YouTube + local video understanding |
+| 2 | `pi-mcp-adapter` | 2.37.0 | MCP (Model Context Protocol) adapter |
+| 3 | `pi-subagents` | 0.71.0 | subagent delegation + scripted multi-agent workflows |
+| 4 | `pi-goal-x` | 0.31.9 | `/goal`: goal planning, durable progress, an auditor that checks completion |
+| 5 | `pi-background-tasks` | 2.6.5 | background shell tasks, read-only delegated agents, attested runs, Fusion workflows |
 | 6 | `pi-model-fallback` | 0.5.0 | switches to a fallback model by **rule** (provider/model + HTTP status 429/5xx) on provider failure; durable state with cooldowns; configured through the `model_fallback_config` tool |
-| 7 | `@narumitw/pi-usage` | 0.60.11 | account usage display + DeepSeek API balance |
+| 7 | `@narumitw/pi-usage` | 0.61.1 | account usage display + DeepSeek API balance |
 | 8 | `pi-simplify` | 0.2.3 | reviews just-changed code for clarity, consistency, maintainability |
 | 9 | `pi-footer` | 0.5.1 | multi-row, customisable statusline (used by this repo) |
 | 10 | `pi-powerline-footer` | 0.17.2 | powerline-style status bar (currently **off** via `"extensions": []`) |
@@ -246,13 +248,13 @@ Restoring this bundle yields the same file set as `config/` — all 22 extension
 | 14 | `@juicesharp/rpiv-ask-user-question` | 2.11.0 | asks you through multiple-choice questionnaires instead of guessing |
 | 15 | `@juicesharp/rpiv-btw` | 2.11.0 | `/btw`: quick one-off question answered by the main model without polluting the conversation |
 | 16 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` with a desktop-browser TLS fingerprint + defuddle content extraction |
-| 17 | `pi-advisor-flow` | 0.8.0 | Executor/Advisor flow: a second opinion from a stronger model, with review gates before planning / after repeated failures / before declaring done |
+| 17 | `pi-advisor-flow` | 0.8.2 | Executor/Advisor flow: a second opinion from a stronger model, with review gates before planning / after repeated failures / before declaring done |
 | 18 | `@tmustier/pi-session-recap` | 0.5.1 | "while you were away" recap: drafts a short summary when you leave a session and shows it at the end of the transcript / above the editor when you return. Built for many parallel agents |
 | 19 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
 | 20 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
 | 21 | `pi-tool-display` | 0.5.0 | replaces the built-in rendering of `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` with compact summaries (`summary`/`count`/`bars` modes), collapsible bash output and a side-by-side diff view. Configured in `config/extensions/pi-tool-display/config.json` |
 
-> Versions are **for reference at snapshot time (2026-09-23)**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
+> Versions are **for reference at snapshot time (2026-09-28)**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
 Default: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Enabled models: `9router/*` and `openai-codex/*` (the Devin provider was removed — no package, no patch).
 Auto-compaction triggers above **200K tokens** for every model that has room for it: pi compacts when `contextTokens > contextWindow - reserveTokens`, so the 1M-context 9router models get a per-model `reserveTokens: 800000` while the `openai-codex` models (272K context) get `72000`. `gpt-5.3-codex-spark` has only 128K context, so no override is set for it — it keeps the global 16384 reserve.
@@ -410,7 +412,9 @@ An **Executor / Advisor** flow: the model doing the work (Executor) can ask a st
 /advisor-settings   # behaviour, context, privacy, limits
 ```
 
-Global config is **`~/.pi/agent/advisor.json`** — at the **root** of the config dir, **not** inside `extensions/`, so backup has to list it separately (it does). A project can override it with `<project>/.pi/advisor.json`.
+Global config is **`~/.pi/agent/advisor.json`** — at the **root** of the config dir, **not** inside `extensions/`, so backup has to list it separately (it does).
+
+> **No project override in 0.8.x.** `advisor.json` is read from the global config dir only: the upstream docs state that *"Repository-controlled project `advisor.json` files are not applied. Models, prompts, gates, budgets, disclosure, redaction, integrations, and consent remain under the user's global configuration."* Do not rely on `<project>/.pi/advisor.json` — the extension only reports unrecognized keys and ignores the file's effect.
 
 The extension also publishes 2 status keys (`advisor-scout`, `advisor-usage`) — both are in `hiddenKeys` and have inline widgets like the other 9, so the status row does not come back while the Advisor runs.
 
@@ -574,8 +578,9 @@ Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, n
 | `auth.json` in the new dir | `{}` → no secret leakage |
 | Second run | empty log → idempotent |
 | Two consecutive backups | **byte-identical** (deterministic) **(2026-09-23)** |
-| `config/` mirror ≡ live setup | ✅ `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/`, `kitty.conf` all byte-identical to `~/.pi/agent` after the mirror **(2026-09-23)** |
-| `.pi-setup-exclude` coverage | ✅ mirror reports **83 excluded files** across `orca-*` / `agentkit-*` / `herdr-*` / advisor outcome state **(2026-09-23)** |
+| `config/` mirror ≡ live setup | ✅ 21 packages; `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/` byte-identical to `~/.pi/agent` after the mirror; `pi-lens-config.json` and `kitty.conf` byte-identical to `~/.pi-lens/config.json` and `~/.config/kitty/kitty.conf` **(2026-09-28)** |
+| `models-store.json` is live, not frozen | ⚠️ `checkedAt` advances whenever pi revalidates a model catalog (≈ every 4 h), so a backup taken after such a revalidation differs from the previous one. Two backups taken back-to-back are still **byte-identical**; the file contains **no credentials** |
+| `.pi-setup-exclude` coverage | ✅ mirror reports **93 excluded files** across `orca-*` / `agentkit-*` / `herdr-*` / advisor outcome state **(2026-09-28)** |
 | `context-bar` rendering | ✅ direct `render()` call: 0/25/**71%→yellow**/**92%→red**/100%, correctly scaled for 200k and 1M |
 | `--no-statusline` | ✅ `pi-footer.json` disappears from the bundle (different SHA than the default) |
 | `--hooks` + `.pi-setup-exclude` | ✅ hooks survive, "override" warning printed, 54 files remain |
@@ -600,7 +605,7 @@ Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, n
 |---|---|
 | Config matrix (real runs, exit codes compared) | ✅ **6/6**: clean config `0` · unknown key `1` · outside enum `1` · wrong type `1` · ref missing `provider/model` `1` · missing `gateFailureMode` still `0` |
 | Environment branches | ✅ **7/7**: `--live` compares both files `0` · missing `--pkg` `2` · bundle without `CONFIG_SCHEMA` `2` · `--help` `0` · bad argument `2` · unparsable JSON `1` · missing file `1` |
-| Schema extraction | ✅ **31 keys** from the 0.6.0 bundle's `CONFIG_SCHEMA`; reproduces the exact `advisorFailureMode` notice the extension emitted (harness matched real output) |
+| Schema extraction | ✅ **44 keys** from the 0.8.2 bundle's `CONFIG_SCHEMA` (31 in 0.6.0); reproduces the exact `advisorFailureMode` notice the extension emitted (harness matched real output). Re-measured 2026-09-28 |
 
 ---
 
