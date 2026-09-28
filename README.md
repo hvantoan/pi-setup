@@ -140,10 +140,6 @@ pi-setup/
     ├── kitty.conf                  kitty terminal config (lives in ~/.config/kitty/)
     ├── model-fallback/
     │   └── config.json            pi-model-fallback rules (state.json is not taken)
-    ├── patches/                    node_modules patches (see "Patched packages")
-    │   ├── pi-devin-provider-index.ts          patched extension file
-    │   ├── reapply-devin-early-discovery.sh    re-apply after pi update
-    │   └── check-devin-early-discovery.sh      one runnable check (PASS/FAIL)
     └── extensions/                 locally written extensions, not on npm
         ├── pi-footer-cache-tps.ts  pushes cache-TTL + token speed (t/s) into pi-footer
         ├── pi-footer.json          statusline layout (includes the context bar)
@@ -216,7 +212,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-A ready-made bundle so you don't have to clone and run the backup yourself: **15 files** — `settings.json` (22 packages), `APPEND_SYSTEM.md`, `models.json` (9router provider), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json`, `patches/` (3 files), and `model-fallback/config.json`.
+A ready-made bundle so you don't have to clone and run the backup yourself: **12 files** — `settings.json` (21 packages), `APPEND_SYSTEM.md`, `models.json` (9router provider), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json`, and `model-fallback/config.json`.
 
 It is the script's full default bundle, **filtered** through `.pi-setup-exclude` so machine-only material never reaches this public repo:
 
@@ -254,12 +250,12 @@ Restoring this bundle yields the same file set as `config/` — all 22 extension
 | 18 | `@tmustier/pi-session-recap` | 0.5.1 | "while you were away" recap: drafts a short summary when you leave a session and shows it at the end of the transcript / above the editor when you return. Built for many parallel agents |
 | 19 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
 | 20 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
-| 21 | `pi-devin-provider` | 0.1.0 | adds the `devin` provider (Devin's model catalogue) and keeps `devin/swe-*` in the model rotation. Requires the local patch below — without it the scope pattern does not resolve |
-| 22 | `pi-tool-display` | 0.5.0 | replaces the built-in rendering of `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` with compact summaries (`summary`/`count`/`bars` modes), collapsible bash output and a side-by-side diff view. Configured in `config/extensions/pi-tool-display/config.json` |
+| 21 | `pi-tool-display` | 0.5.0 | replaces the built-in rendering of `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` with compact summaries (`summary`/`count`/`bars` modes), collapsible bash output and a side-by-side diff view. Configured in `config/extensions/pi-tool-display/config.json` |
 
 > Versions are **for reference at snapshot time (2026-09-23)**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
-Default: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Enabled models: `9router/ol/deepseek-v4.1-flash`, `9router/flash` (9router's auto-fallback combo) and `devin/swe-*` (requires the patch below).
+Default: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Enabled models: `9router/*` and `openai-codex/*` (the Devin provider was removed — no package, no patch).
+Auto-compaction triggers above **200K tokens** for every model that has room for it: pi compacts when `contextTokens > contextWindow - reserveTokens`, so the 1M-context 9router models get a per-model `reserveTokens: 800000` while the `openai-codex` models (272K context) get `72000`. `gpt-5.3-codex-spark` has only 128K context, so no override is set for it — it keeps the global 16384 reserve.
 
 ---
 
@@ -510,28 +506,9 @@ node scripts/pi-lens-compact-lsp-status.mjs --revert  # restore the original bun
 
 > ⚠ npm overwrites `pi-lens/dist/index.js` on every `pi update` or pi-lens reinstall → **re-run this script**. That is why a patch script lives in this snapshot repo. An upstream request for a first-class option is filed.
 
-### `patches/` — patched packages
-
-The snapshot contains one other patch, in `~/.pi/agent/patches/` (mirrored to `config/patches/`):
-
-| File | What it is |
-|---|---|
-| `pi-devin-provider-index.ts` | patched copy of `pi-devin-provider/extensions/devin/index.ts` |
-| `reapply-devin-early-discovery.sh` | copies the patched file back over the npm one |
-| `check-devin-early-discovery.sh` | one runnable check — `PASS: devin/swe-2-* resolves at startup` / `FAIL` |
-
-**Why:** pi resolves the `enabledModels` / `--models` scope against the model catalogue **before** any extension `session_start` handler runs, while `pi-devin-provider` discovers its real list (209 models) *inside* that handler. At scope-resolution time only its two static fallbacks exist, so `devin/swe-*` fails with `Warning: No models match pattern`. The patch makes the extension factory `async` and discovers models before `pi.registerProvider`, and pi awaits the factory before resolving the scope.
-
-```bash
-sh ~/.pi/agent/patches/reapply-devin-early-discovery.sh   # after `pi update` / reinstalling the package
-sh ~/.pi/agent/patches/check-devin-early-discovery.sh     # verify (exit 1 = not applied)
-```
-
-> ⚠ The patch lives in `node_modules`, which npm rewrites on every `pi update` → **re-run the re-apply script**, or drop `devin/swe-*` from `enabledModels`. An upstream fix (resolve the scope after providers settle) would remove the need for this patch. `pi-setup-restore.sh` reports the patch state of the restore target as its step 5.
-
 ### `pi-setup-backup.sh`
 
-By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `patches/`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`).
+By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`).
 
 > The bundled `models.json` carries the same `$NINEROUTER_API_KEY` placeholder as `config/`. A bundle you build yourself copies the live file **verbatim** — if your `models.json` still holds a literal key, the script's secret scan warns before you publish it.
 
@@ -597,7 +574,7 @@ Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, n
 | `auth.json` in the new dir | `{}` → no secret leakage |
 | Second run | empty log → idempotent |
 | Two consecutive backups | **byte-identical** (deterministic) **(2026-09-23)** |
-| `config/` mirror ≡ live setup | ✅ `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/`, `patches/`, `kitty.conf` all byte-identical to `~/.pi/agent` after the mirror **(2026-09-23)** |
+| `config/` mirror ≡ live setup | ✅ `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/`, `kitty.conf` all byte-identical to `~/.pi/agent` after the mirror **(2026-09-23)** |
 | `.pi-setup-exclude` coverage | ✅ mirror reports **83 excluded files** across `orca-*` / `agentkit-*` / `herdr-*` / advisor outcome state **(2026-09-23)** |
 | `context-bar` rendering | ✅ direct `render()` call: 0/25/**71%→yellow**/**92%→red**/100%, correctly scaled for 200k and 1M |
 | `--no-statusline` | ✅ `pi-footer.json` disappears from the bundle (different SHA than the default) |

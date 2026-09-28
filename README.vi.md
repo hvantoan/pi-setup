@@ -139,10 +139,6 @@ pi-setup/
     ├── kitty.conf                  config terminal kitty (ở ~/.config/kitty/)
     ├── model-fallback/
     │   └── config.json            rule fallback của pi-model-fallback (state.json không lấy)
-    ├── patches/                    bản vá node_modules (xem mục "Package được vá")
-    │   ├── pi-devin-provider-index.ts          file extension đã vá
-    │   ├── reapply-devin-early-discovery.sh    vá lại sau `pi update`
-    │   └── check-devin-early-discovery.sh      check chạy được (PASS/FAIL)
     └── extensions/                 extension tự viết, không có trên npm
         ├── pi-footer-cache-tps.ts  đẩy cache-TTL + tốc độ token (t/s) vào pi-footer
         ├── pi-footer.json          layout statusline (gồm context bar)
@@ -215,7 +211,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **15 file** (mục + config ngoài + manifest) — `settings.json` (22 package), `APPEND_SYSTEM.md`, `models.json` (provider 9router), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json`, `patches/` (3 file) và `model-fallback/config.json`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **12 file** (mục + config ngoài + manifest) — `settings.json` (21 package), `APPEND_SYSTEM.md`, `models.json` (provider 9router), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json` và `model-fallback/config.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -253,12 +249,12 @@ Restore bundle này cho cùng bộ file như `config/` — đủ 22 extension + 
 | 18 | `@tmustier/pi-session-recap` | 0.5.1 | recap “while you were away”: soạn sẵn bản tóm tắt khi bạn rời session, hiện ở cuối transcript / trên editor lúc quay lại. Cho workflow nhiều agent chạy song song |
 | 19 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checker, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. Trong setup này đã tắt widget + autoformat + autofix (xem mục riêng) |
 | 20 | `@injaneity/pi-computer-use` | 0.5.1 | cho agent điều khiển app desktop trên macOS, Windows và Linux qua accessibility API của hệ điều hành: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Cài helper riêng cho user ở `~/Applications/pi-computer-use.app`; macOS cần cấp **Accessibility** + **Screen Recording** cho helper, và bước setup chỉ chạy trong session pi tương tác → ở chế độ `-p` (print) extension chưa làm được gì cho tới khi bạn cấp quyền |
-| 21 | `pi-devin-provider` | 0.1.0 | thêm provider `devin` (catalog model của Devin) và giữ `devin/swe-*` trong vòng xoay model. Cần bản vá trong `patches/` — không có thì pattern scope không resolve được |
-| 22 | `pi-tool-display` | 0.5.0 | thay cách render mặc định của `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` bằng bản tóm tắt gọn (`summary`/`count`/`bars`), bash output thu gọn được và diff view 2 cột. Config ở `config/extensions/pi-tool-display/config.json` |
+| 21 | `pi-tool-display` | 0.5.0 | thay cách render mặc định của `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` bằng bản tóm tắt gọn (`summary`/`count`/`bars`), bash output thu gọn được và diff view 2 cột. Config ở `config/extensions/pi-tool-display/config.json` |
 
 > Version là **tham khảo tại thời điểm snapshot (2026-09-23)**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
-Provider mặc định: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Model đang bật: `9router/ol/deepseek-v4.1-flash`, `9router/flash` (combo auto-fallback của 9router) và `devin/swe-*` (cần bản vá bên dưới).
+Provider mặc định: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Model đang bật: `9router/*` và `openai-codex/*` (provider Devin đã bị gỡ — không còn package lẫn bản vá).
+Auto-compact bật khi vượt **200K token** với mọi model còn đủ chỗ: pi compact khi `contextTokens > contextWindow - reserveTokens`, nên model 9router (context 1M) có `reserveTokens: 800000` riêng, còn model `openai-codex` (context 272K) có `72000`. Riêng `gpt-5.3-codex-spark` chỉ 128K context nên **không** đặt override — nó giữ mức mặc định 16384.
 
 ---
 
@@ -507,28 +503,9 @@ node scripts/pi-lens-compact-lsp-status.mjs --revert  # trả bundle về nguyê
 
 > ⚠ npm ghi đè `pi-lens/dist/index.js` mỗi lần `pi update` hoặc cài lại pi-lens → **chạy lại script này**. Đó là lý do một script vá nằm trong repo snapshot. Đã gửi đề xuất upstream xin option chính thức cho dòng status này.
 
-### `patches/` — package được vá
-
-Snapshot còn một bản vá khác, trong `~/.pi/agent/patches/` (mirror sang `config/patches/`):
-
-| File | Là gì |
-| --- | --- |
-| `pi-devin-provider-index.ts` | bản đã vá của `pi-devin-provider/extensions/devin/index.ts` |
-| `reapply-devin-early-discovery.sh` | copy bản vá đè lên file trong npm |
-| `check-devin-early-discovery.sh` | check chạy được — `PASS: devin/swe-2-* resolves at startup` / `FAIL` |
-
-**Vì sao:** pi resolve scope `enabledModels` / `--models` dựa trên catalog model **trước khi** handler `session_start` của extension nào chạy, trong khi `pi-devin-provider` khám phá danh sách thật (209 model) *bên trong* handler đó. Lúc resolve scope chỉ có 2 model fallback tĩnh, nên `devin/swe-*` fail với `Warning: No models match pattern`. Bản vá cho factory của extension thành `async` và khám phá model trước `pi.registerProvider`; pi await factory trước khi resolve scope.
-
-```bash
-sh ~/.pi/agent/patches/reapply-devin-early-discovery.sh   # sau `pi update` / cài lại package
-sh ~/.pi/agent/patches/check-devin-early-discovery.sh     # kiểm tra (exit 1 = chưa vá)
-```
-
-> ⚠ Bản vá nằm trong `node_modules` — npm ghi đè mỗi lần `pi update` → **chạy lại script re-apply**, hoặc bỏ `devin/swe-*` khỏi `enabledModels`. Khi upstream sửa (resolve scope sau khi provider ổn định) thì không cần bản vá này nữa. `pi-setup-restore.sh` báo trạng thái bản vá của đích restore ở bước 5.
-
 ### `pi-setup-backup.sh`
 
-Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `patches/`, `extensions/` — và **luôn lấy cả statusline** (`extensions/pi-footer.json` nằm trong `extensions/`).
+Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `extensions/` — và **luôn lấy cả statusline** (`extensions/pi-footer.json` nằm trong `extensions/`).
 
 > `models.json` trong bundle mang cùng placeholder `$NINEROUTER_API_KEY` như `config/`. Bundle bạn tự tạo copy file live **nguyên bản** — nếu `models.json` của bạn còn key thật thì script quét secret sẽ cảnh báo trước khi bạn publish.
 
@@ -594,7 +571,7 @@ Test bằng cách restore vào một config dir **hoàn toàn mới** qua `PI_CO
 | `auth.json` trong dir mới | `{}` → không rò secret |
 | Chạy lần 2 | log rỗng → idempotent |
 | Backup 2 lần liên tiếp | **byte-identical** (deterministic) **(2026-09-23)** |
-| `config/` mirror ≡ setup live | ✅ `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/`, `patches/`, `kitty.conf` **giống từng byte** sau khi mirror **(2026-09-23)** |
+| `config/` mirror ≡ setup live | ✅ `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/`, `kitty.conf` **giống từng byte** sau khi mirror **(2026-09-23)** |
 | `.pi-setup-exclude` phủ đủ | ✅ mirror báo **83 file bị loại** thuộc `orca-*` / `agentkit-*` / `herdr-*` / state advisor **(2026-09-23)** |
 | `context-bar` render | ✅ gọi trực tiếp `render()`: 0/25/**71%→vàng**/**92%→đỏ**/100%, scale đúng theo 200k và 1m |
 | `--no-statusline` | ✅ `pi-footer.json` biến mất khỏi bundle (SHA khác bản mặc định) |

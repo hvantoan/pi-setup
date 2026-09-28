@@ -50,7 +50,6 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 | `model-fallback/config.json` | — | ✅ **mặc định** | rule của `pi-model-fallback`, ở thư mục `model-fallback/` (không trong `extensions/`) nên liệt kê riêng; **chỉ lấy file config** — `state.json` cùng thư mục là state theo máy (entry + mốc cooldown), không đưa vào artifact |
 | `extensions/*/hooks/` | 544 KB | ⚠️ opt-in | `--hooks` (mặc định đã nằm trong `extensions/` khi không lọc) |
 | `models-store.json` | 61 KB | ✅ | catalog model; có sẵn thì khỏi chờ refresh 4 giờ |
-| `patches/` | 16 KB | ✅ **mặc định** | bản vá `pi-devin-provider` (khám phá model sớm) + script re-apply/check. Không có nó thì `devin/swe-*` trong `enabledModels` không resolve — chi tiết ở README mục *`patches/` — package được vá* |
 | `~/.config/kitty/kitty.conf` | 456 B | ✅ **mặc định** | config terminal kitty, nằm **NGOÀI** config dir → lấy qua `EXTERNAL_CONFIGS`, thành `kitty.conf` + dòng tương ứng trong `external-configs.txt` |
 | `99extensions.json` | — | ➖ không có | config họ 99percentpeople (`@99percentpeople/pi-todo`) ở gốc config dir; chỉ sinh ra sau khi dùng `/99settings` nên snapshot này không có. Script vẫn liệt kê, nên nó tự được lấy khi bạn dùng tính năng đó |
 | `~/.unipi/config/notify/config.json` | — | ❌ **credential** | config `@pi-unipi/notify` (package này **đã bỏ khỏi snapshot**, thêm lại bằng tay nếu cần): chứa token Gotify + botToken/chatId Telegram → **cố ý** không đưa vào; chạy `/unipi:notify-set-gotify` + `/unipi:notify-set-tg` trên chính máy đó |
@@ -94,7 +93,6 @@ pi-setup/
     ├── kitty.conf                  ← ~/.config/kitty/kitty.conf (ngoài config dir)
     ├── external-configs.txt        ← manifest: file nào đặt về đâu khi restore
     ├── model-fallback/config.json
-    ├── patches/                    ← bản vá node_modules (pi-devin-provider) + script
     └── extensions/
         ├── pi-footer-cache-tps.ts
         ├── pi-footer.json
@@ -349,7 +347,7 @@ Cách test: restore vào một config dir **hoàn toàn mới** qua biến `PI_C
 
 | Kiểm tra | Kết quả |
 | --- | --- |
-| Restore vào dir mới | ✅ `settings.json APPEND_SYSTEM.md models-store.json advisor.json patches extensions` + config ngoài `~/.pi-lens/config.json`, `~/.config/kitty/kitty.conf` |
+| Restore vào dir mới | ✅ `settings.json APPEND_SYSTEM.md models-store.json advisor.json extensions` + config ngoài `~/.pi-lens/config.json`, `~/.config/kitty/kitty.conf` |
 | Cài 20 extension | ✅ **246 s**, module dirs `0 → 203` |
 | `--verify` | ✅ **`20/20 extension khớp`** |
 | Extension có **chạy** không | ✅ 18 `extension_ui_request`, 0 lỗi load, thấy `pi-lens-lsp` |

@@ -30,13 +30,11 @@
     "npm:pi-lens",
     "npm:@99percentpeople/pi-todo",
     "npm:@injaneity/pi-computer-use",
-    "npm:pi-devin-provider",
     "npm:pi-tool-display"
   ],
   "enabledModels": [
-    "9router/ol/deepseek-v4.1-flash",
-    "9router/flash",
-    "devin/swe-*"
+    "9router/*",
+    "openai-codex/*"
   ],
   "showCacheMissNotices": true,
   "thinkingBudgets": {
@@ -46,7 +44,36 @@
   "compaction": {
     "enabled": true,
     "reserveTokens": 16384,
-    "keepRecentTokens": 20000
+    "keepRecentTokens": 20000,
+    "modelOverrides": {
+      "9router/ol/deepseek-v4.1-flash": {
+        "reserveTokens": 800000
+      },
+      "9router/flash": {
+        "reserveTokens": 800000
+      },
+      "openai-codex/gpt-5.5": {
+        "reserveTokens": 72000
+      },
+      "openai-codex/gpt-5.6-luna": {
+        "reserveTokens": 72000
+      },
+      "openai-codex/gpt-5.6-sol": {
+        "reserveTokens": 72000
+      },
+      "openai-codex/gpt-5.6-terra": {
+        "reserveTokens": 72000
+      },
+      "openai-codex/gpt-6-astra": {
+        "reserveTokens": 72000
+      },
+      "openai-codex/gpt-6-luna": {
+        "reserveTokens": 72000
+      },
+      "openai-codex/gpt-6-sol": {
+        "reserveTokens": 72000
+      }
+    }
   },
   "retry": {
     "enabled": true,
@@ -57,5 +84,6 @@
   },
   "skills": [
     "!**/.agents/**"
-  ]
+  ],
+  "hideThinkingBlock": true
 }

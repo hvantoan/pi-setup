@@ -8,5 +8,8 @@
   "advisorUntrackedContent": true,
   "gateFailureMode": "warn-and-continue",
   "advisor": "9router/ol/deepseek-v4.1-flash",
-  "executor": "9router/ol/deepseek-v4.1-flash"
+  "executor": "9router/ol/deepseek-v4.1-flash",
+  "simpleMode": false,
+  "contextMaxChars": 15000,
+  "advisorEffort": "medium"
 }

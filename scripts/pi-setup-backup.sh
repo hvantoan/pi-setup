@@ -40,9 +40,7 @@ AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 # model-fallback/config.json của pi-model-fallback cũng nằm ngoài extensions/ (trong
 # thư mục model-fallback/) → liệt kê riêng. CHỈ lấy file config, KHÔNG lấy cả thư mục:
 # state.json cùng thư mục là state theo máy (entry + mốc cooldown), không phải setup.
-# patches/ chứa bản vá node_modules (hiện tại: pi-devin-provider) + script re-apply/
-# kiểm tra. Không có nó thì `devin/swe-*` trong enabledModels không resolve được.
-ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models.json models-store.json advisor.json 99extensions.json model-fallback/config.json extensions patches)
+ITEMS_SETUP=(settings.json APPEND_SYSTEM.md models.json models-store.json advisor.json 99extensions.json model-fallback/config.json extensions)
 
 OUT="$ROOT/pi-setup-portable.tar.gz"
 CONFIG_DIR=""
