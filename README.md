@@ -256,8 +256,8 @@ Restoring this bundle yields the same file set as `config/` — all 21 extension
 
 > Versions are **for reference at snapshot time (2026-09-28)**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
-Default: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Enabled models: `9router/*` and `openai-codex/*` (the Devin provider was removed — no package, no patch).
-Auto-compaction triggers above **200K tokens** for every model that has room for it: pi compacts when `contextTokens > contextWindow - reserveTokens`, so the 1M-context 9router models get a per-model `reserveTokens: 800000` while the `openai-codex` models (272K context) get `72000`. `gpt-5.3-codex-spark` has only 128K context, so no override is set for it — it keeps the global 16384 reserve.
+Default: `9router/ol/deepseek-v4.1-flash` (thinking `high`). No `enabledModels` filter is set, so every provider's models are selectable (the Devin provider was removed — no package, no patch).
+Auto-compaction runs on a per-model token budget: pi compacts when `contextTokens > contextWindow - reserveTokens`. The 1M-context 9router models get a per-model `reserveTokens: 700000`, so they compact above **300K tokens**. Everything else keeps the global `16384` reserve: the `openai-codex` models (272K context) therefore compact above **~256K**, and `gpt-5.3-codex-spark` (128K context) above ~112K.
 
 ---
 

@@ -42,7 +42,7 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 
 | Mục trong `~/.pi/agent/` | Size | Vào repo? | Lý do |
 |---|---|---|---|
-| `settings.json` | 4 KB | ✅ **bắt buộc** | 21 packages, `enabledModels`, theme, compaction, thinkingBudgets, retry |
+| `settings.json` | 4 KB | ✅ **bắt buộc** | 21 packages, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
 | `models.json` | 1.3 KB | ✅ **bắt buộc** | khai báo provider **9router** (baseUrl `http://127.0.0.1:20128/v1`, `api: openai-completions`) + 2 model (`flash`, `ol/deepseek-v4.1-flash`). `apiKey` để dạng `$NINEROUTER_API_KEY` → repo không chứa credential. Không có file này thì `9router` là provider lạ, `pi --list-models` không thấy model nào |
 | `extensions/` | 1.4 MB | ✅ (lọc) | extension tự viết local + config của chúng (`pi-footer.json`, `pi-footer-cache-tps.ts`, `pi-tool-display/config.json`). `orca-*.ts` (Orca sinh), `agentkit-*` (AgentKit sinh) và `herdr-agent-state.ts` (herdr sinh) bị loại — xem `.pi-setup-exclude` |
@@ -445,7 +445,7 @@ cd /tmp/verify-clone
 | Extension local không load | kiểm tra file còn trong `~/.pi/agent/extensions/`, rồi `/reload` hoặc restart pi |
 | `pi` không tự cài (npm bị chặn) | cài thủ công từng package trong `settings.json` |
 | `no credentials` / 401 | `/login`, hoặc `pi auth check --provider <name>` |
-| Model không hiện | `pi --list-models`; kiểm tra `enabledModels` trong `settings.json` |
+| Model không hiện | `pi --list-models`; kiểm tra provider còn trong `models.json` và `pi auth check --provider <name>`. Setup này **không** đặt `enabledModels` nên không có filter model nào |
 | `command not found: pi` sau khi `nvm use` | pi cài theo từng Node version → `npm i -g @earendil-works/pi-coding-agent` lại |
 | Icon statusline hiện ◆/✦/`?` thay vì icon | terminal đang dùng font **không patch** → cài Nerd Font bản **Mono** rồi trỏ terminal vào đó, hoặc đổi `iconMode` sang `emoji`/`text` (xem [Windows (Git Bash)](#windows-git-bash)) |
 | `pi` không thấy sau `fnm use` (Windows) | pi cài theo từng Node version của fnm → cài lại global trong shell đó |

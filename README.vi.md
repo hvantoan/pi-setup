@@ -255,8 +255,8 @@ Restore bundle này cho cùng bộ file như `config/` — đủ 21 extension + 
 
 > Version là **tham khảo tại thời điểm snapshot (2026-09-28)**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
-Provider mặc định: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Model đang bật: `9router/*` và `openai-codex/*` (provider Devin đã bị gỡ — không còn package lẫn bản vá).
-Auto-compact bật khi vượt **200K token** với mọi model còn đủ chỗ: pi compact khi `contextTokens > contextWindow - reserveTokens`, nên model 9router (context 1M) có `reserveTokens: 800000` riêng, còn model `openai-codex` (context 272K) có `72000`. Riêng `gpt-5.3-codex-spark` chỉ 128K context nên **không** đặt override — nó giữ mức mặc định 16384.
+Provider mặc định: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Không đặt filter `enabledModels`, nên model của mọi provider đều chọn được (provider Devin đã bị gỡ — không còn package lẫn bản vá).
+Auto-compact chạy theo ngân sách token riêng của từng model: pi compact khi `contextTokens > contextWindow - reserveTokens`. Model 9router (context 1M) có `reserveTokens: 700000` nên compact khi vượt **300K token**. Phần còn lại giữ mức mặc định `16384`: model `openai-codex` (context 272K) compact khi vượt **~256K**, còn `gpt-5.3-codex-spark` (context 128K) khi vượt ~112K.
 
 ---
 

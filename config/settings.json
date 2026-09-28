@@ -32,10 +32,6 @@
     "npm:@injaneity/pi-computer-use",
     "npm:pi-tool-display"
   ],
-  "enabledModels": [
-    "9router/*",
-    "openai-codex/*"
-  ],
   "showCacheMissNotices": true,
   "thinkingBudgets": {
     "medium": 10240,
@@ -47,31 +43,10 @@
     "keepRecentTokens": 20000,
     "modelOverrides": {
       "9router/ol/deepseek-v4.1-flash": {
-        "reserveTokens": 800000
+        "reserveTokens": 700000
       },
       "9router/flash": {
-        "reserveTokens": 800000
-      },
-      "openai-codex/gpt-5.5": {
-        "reserveTokens": 72000
-      },
-      "openai-codex/gpt-5.6-luna": {
-        "reserveTokens": 72000
-      },
-      "openai-codex/gpt-5.6-sol": {
-        "reserveTokens": 72000
-      },
-      "openai-codex/gpt-5.6-terra": {
-        "reserveTokens": 72000
-      },
-      "openai-codex/gpt-6-astra": {
-        "reserveTokens": 72000
-      },
-      "openai-codex/gpt-6-luna": {
-        "reserveTokens": 72000
-      },
-      "openai-codex/gpt-6-sol": {
-        "reserveTokens": 72000
+        "reserveTokens": 700000
       }
     }
   },
