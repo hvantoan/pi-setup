@@ -2,9 +2,9 @@
 
 # pi-setup
 
-**A portable snapshot of a [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 21 extensions on a new machine.**
+**A portable snapshot of a [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 20 extensions on a new machine.**
 
-pi `0.87.1` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-09-28
+pi `1.0.4` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-10-07
 
 **English** · [Tiếng Việt](./README.vi.md)
 
@@ -29,7 +29,7 @@ The mechanism: `settings.json` holds a `packages` array; pi reads it on startup 
 
 ```bash
 # 1) install pi, exact version
-npm i -g @earendil-works/pi-coding-agent@0.87.1
+npm i -g @earendil-works/pi-coding-agent@1.0.4
 
 # 2) clone
 git clone https://github.com/hvantoan/pi-setup.git
@@ -82,7 +82,7 @@ The full Windows sequence:
 ```bash
 # inside Git Bash
 fnm use 24
-npm i -g @earendil-works/pi-coding-agent@0.87.1
+npm i -g @earendil-works/pi-coding-agent@1.0.4
 git clone https://github.com/hvantoan/pi-setup.git && cd pi-setup
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # rehearsal
 ./scripts/pi-setup-restore.sh --install --verify                                 # for real
@@ -124,13 +124,12 @@ pi-setup/
 ├── scripts/
 │   ├── pi-setup-backup.sh           packages the current machine's setup
 │   ├── pi-setup-restore.sh          rebuilds that setup on a new machine
-│   ├── pi-setup-verify-advisor.mjs  validates advisor.json against pi-advisor-flow's real schema
-│   └── pi-lens-compact-lsp-status.mjs  patches pi-lens so the LSP status line is compact (`LSP ✓` / `LSP ✗`)
+│   └── pi-setup-verify-advisor.mjs  validates advisor.json against pi-advisor-flow's real schema
 ├── backups/
 │   └── pi-setup-portable.tar.gz     ready-to-download bundle (filtered — see below)
 └── config/                          setup snapshot (plain files, git-diffable)
     ├── .pi-setup-exclude           exclusion globs — backup honours this file
-    ├── settings.json               manifest of 21 packages + model/theme/compaction
+    ├── settings.json               manifest of 20 packages + model/theme/compaction
     ├── advisor.json                pi-advisor-flow config (at the config-dir root)
     ├── pi-lens-config.json          pi-lens config — lives in ~/.pi-lens/, OUTSIDE the config dir
     ├── external-configs.txt        manifest: which file goes where on restore
@@ -157,13 +156,14 @@ pi-setup/
 | `extensions/agentkit-agent/`, `extensions/agentkit-hooks-engineer/` | AgentKit (`ak`) | 1.2 MB of generated hooks plus caches holding **absolute paths** (`native-skill-paths.json`, 157 KB); `ak` reinstalls them |
 | `extensions/herdr-agent-state.ts` | herdr | Header says *"managed by herdr; reinstalling or updating the integration overwrites this file"* → a copy in git goes stale |
 | `missions/`, `memory/`, `skills/` | pi / AgentKit | machine-specific state, not setup |
+| `mcp.json` | you (`pi mcp add`) | built-in MCP config — contains **real tokens** (`JIRA_API_TOKEN`, internal `JIRA_URL`), same reason as `models.json` |
 
 ### `.pi-setup-exclude`
 
 `scripts/pi-setup-backup.sh --config-dir config` reads this file (one glob per line, `#` for comments) and deletes every match after mirroring. That is why re-running the backup never drags `orca-*`/`agentkit-*`/`herdr-*` back into the repo:
 
 ```bash
-./scripts/pi-setup-backup.sh --config-dir config --exclude-file config/.pi-setup-exclude   # → "excluded: 93 files matched .pi-setup-exclude"  (2026-09-28)
+./scripts/pi-setup-backup.sh --config-dir config --exclude-file config/.pi-setup-exclude   # → "excluded: 95 files matched .pi-setup-exclude"  (2026-10-07)
 ```
 
 > In `--config-dir` mode the exclude file is auto-discovered at `config/.pi-setup-exclude`; passing it explicitly just makes the command self-contained regardless of cwd and discovery order.
@@ -214,7 +214,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-A ready-made bundle so you don't have to clone and run the backup yourself: **12 files** — `settings.json` (21 packages), `APPEND_SYSTEM.md`, `models.json` (9router provider), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json`, and `model-fallback/config.json`.
+A ready-made bundle so you don't have to clone and run the backup yourself: **12 files** — `settings.json` (20 packages), `APPEND_SYSTEM.md`, `models.json` (9router provider), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json`, and `model-fallback/config.json`.
 
 It is the script's full default bundle, **filtered** through `.pi-setup-exclude` so machine-only material never reaches this public repo:
 
@@ -224,35 +224,34 @@ It is the script's full default bundle, **filtered** through `.pi-setup-exclude`
 | `extensions/agentkit-*` (95 files) | Contains `native-skill-paths.json` + `native-skill-hashes.json` (**absolute paths**, a list of 107 skills) and `hooks/.logs/hook-log.jsonl` (activity log) |
 | `extensions/herdr-agent-state.ts` | herdr-generated (v9) and overwritten on every herdr update |
 
-Restoring this bundle yields the same file set as `config/` — all 21 extensions plus the statusline. It is a snapshot of this machine, so its `settings.json` can differ from `config/settings.json` in keys changed afterwards (e.g. default model, TUI mode). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
+Restoring this bundle yields the same file set as `config/` — all 20 extensions plus the statusline. It is a snapshot of this machine, so its `settings.json` can differ from `config/settings.json` in keys changed afterwards (e.g. default model, TUI mode). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
 
 ---
 
-## The 21 extensions in this snapshot
+## The 20 extensions in this snapshot
 
 | # | Package | Version | What it does |
 |---|---|---|---|
 | 1 | `pi-web-access` | 0.31.0 | web search, URL fetch, GitHub repo cloning, PDF reading, YouTube + local video understanding |
-| 2 | `pi-mcp-adapter` | 2.37.0 | MCP (Model Context Protocol) adapter |
-| 3 | `pi-subagents` | 0.71.0 | subagent delegation + scripted multi-agent workflows |
-| 4 | `pi-goal-x` | 0.31.9 | `/goal`: goal planning, durable progress, an auditor that checks completion |
-| 5 | `pi-background-tasks` | 2.6.5 | background shell tasks, read-only delegated agents, attested runs, Fusion workflows |
-| 6 | `pi-model-fallback` | 0.5.0 | switches to a fallback model by **rule** (provider/model + HTTP status 429/5xx) on provider failure; durable state with cooldowns; configured through the `model_fallback_config` tool |
-| 7 | `@narumitw/pi-usage` | 0.61.1 | account usage display + DeepSeek API balance |
-| 8 | `pi-simplify` | 0.2.3 | reviews just-changed code for clarity, consistency, maintainability |
-| 9 | `pi-footer` | 0.5.1 | multi-row, customisable statusline (used by this repo) |
-| 10 | `pi-powerline-footer` | 0.17.2 | powerline-style status bar (currently **off** via `"extensions": []`) |
-| 11 | `pi-memory` | 0.4.2 | memory + semantic search (qmd) over daily log / long-term / scratchpad |
-| 12 | `pi-worktree` | 1.3.3 | git worktree management, isolated workspaces in one command |
-| 13 | `@99percentpeople/pi-todo` | 1.2.8 | minimal atomic todo: removal by omission, state survives compaction, dependencies, read-only widget |
-| 14 | `@juicesharp/rpiv-ask-user-question` | 2.11.0 | asks you through multiple-choice questionnaires instead of guessing |
-| 15 | `@juicesharp/rpiv-btw` | 2.11.0 | `/btw`: quick one-off question answered by the main model without polluting the conversation |
-| 16 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` with a desktop-browser TLS fingerprint + defuddle content extraction |
-| 17 | `pi-advisor-flow` | 0.8.2 | Executor/Advisor flow: a second opinion from a stronger model, with review gates before planning / after repeated failures / before declaring done |
-| 18 | `@tmustier/pi-session-recap` | 0.5.1 | "while you were away" recap: drafts a short summary when you leave a session and shows it at the end of the transcript / above the editor when you return. Built for many parallel agents |
-| 19 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
-| 20 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
-| 21 | `pi-tool-display` | 0.5.0 | replaces the built-in rendering of `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` with compact summaries (`summary`/`count`/`bars` modes), collapsible bash output and a side-by-side diff view. Configured in `config/extensions/pi-tool-display/config.json` |
+| 2 | `pi-subagents` | 0.71.0 | subagent delegation + scripted multi-agent workflows |
+| 3 | `pi-goal-x` | 0.31.9 | `/goal`: goal planning, durable progress, an auditor that checks completion |
+| 4 | `pi-background-tasks` | 2.6.5 | background shell tasks, read-only delegated agents, attested runs, Fusion workflows |
+| 5 | `pi-model-fallback` | 0.5.0 | switches to a fallback model by **rule** (provider/model + HTTP status 429/5xx) on provider failure; durable state with cooldowns; configured through the `model_fallback_config` tool |
+| 6 | `@narumitw/pi-usage` | 0.61.1 | account usage display + DeepSeek API balance |
+| 7 | `pi-simplify` | 0.2.3 | reviews just-changed code for clarity, consistency, maintainability |
+| 8 | `pi-footer` | 0.5.1 | multi-row, customisable statusline (used by this repo) |
+| 9 | `pi-powerline-footer` | 0.17.2 | powerline-style status bar (currently **off** via `"extensions": []`) |
+| 10 | `pi-memory` | 0.4.2 | memory + semantic search (qmd) over daily log / long-term / scratchpad |
+| 11 | `pi-worktree` | 1.3.3 | git worktree management, isolated workspaces in one command |
+| 12 | `@99percentpeople/pi-todo` | 1.2.8 | minimal atomic todo: removal by omission, state survives compaction, dependencies, read-only widget |
+| 13 | `@juicesharp/rpiv-ask-user-question` | 2.11.0 | asks you through multiple-choice questionnaires instead of guessing |
+| 14 | `@juicesharp/rpiv-btw` | 2.11.0 | `/btw`: quick one-off question answered by the main model without polluting the conversation |
+| 15 | `pi-smart-fetch` | 0.3.17 **(pinned)** | `web_fetch` with a desktop-browser TLS fingerprint + defuddle content extraction |
+| 16 | `pi-advisor-flow` | 0.8.2 | Executor/Advisor flow: a second opinion from a stronger model, with review gates before planning / after repeated failures / before declaring done |
+| 17 | `@tmustier/pi-session-recap` | 0.5.1 | "while you were away" recap: drafts a short summary when you leave a session and shows it at the end of the transcript / above the editor when you return. Built for many parallel agents |
+| 18 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
+| 19 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
+| 20 | `pi-tool-display` | 0.5.0 | replaces the built-in rendering of `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` with compact summaries (`summary`/`count`/`bars` modes), collapsible bash output and a side-by-side diff view. Configured in `config/extensions/pi-tool-display/config.json` |
 
 > Versions are **for reference at snapshot time (2026-09-28)**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
@@ -444,6 +443,7 @@ The annoying part is the **widget** (`setWidget("pi-lens", …)`, showing per-fi
 // ~/.pi-lens/config.json  —  NOTE: lives in ~/.pi-lens/, NOT ~/.pi/agent/
 {
   "lsp": { "enabled": true },
+  "ui": { "compactLspStatus": true },
   "widget": { "visible": false },
   "format": { "enabled": false },
   "autofix": { "enabled": false }
@@ -454,21 +454,44 @@ The annoying part is the **widget** (`setWidget("pi-lens", …)`, showing per-fi
 
 Statusline: the extension publishes the key `pi-lens-lsp` (values like `LSP Active: ts` / `LSP Inactive`) → in `hiddenKeys` with an inline widget, so you **can see whether LSP is running** while the statusline stays 3 rows.
 
-By default that value lists the server names (`LSP Active: typescript, jsonc, …`) and pi-lens has **no** config for it, so this repo compacts it with a **bundle patch**: `LSP ✓` (green) when servers are alive, `LSP ✗` (red) when one failed, `LSP ✗` (dim) when none — with both alive and failed servers it shows `LSP ✓ · LSP ✗`, keeping the original two-state semantics. Re-run after every `pi update`:
-
-```bash
-node scripts/pi-lens-compact-lsp-status.mjs           # patch (no-op if already patched)
-node scripts/pi-lens-compact-lsp-status.mjs --check   # report state only
-node scripts/pi-lens-compact-lsp-status.mjs --revert  # restore the original bundle
-```
+That value lists the server names by default (`LSP Active: typescript, jsonc, …`). `ui.compactLspStatus` (pi-lens **4.3.0+**, upstream #3099) collapses it to one state glyph: `LSP ✓` (green) when servers are alive, `LSP ✗` (red) when one failed, `LSP ✗` (dim) when nothing is warm — with both alive and failed servers it shows `LSP ✓ · LSP ✗`, keeping the original two-state semantics. It is a **config line, not a bundle patch**: `pi update` cannot undo it. Verified by running the real footer twice in the same directory (`compactLspStatus: false` → `LSP Inactive`, `true` → `LSP ✗`).
 
 Its config lives **outside** pi's config dir, which is why `scripts/pi-setup-backup.sh` has a dedicated mechanism for that group: see *Config that lives outside the config dir* above.
 
 ---
 
+## MCP servers (built-in)
+
+pi ≥ 1.0 has MCP **built in**: user-level servers in `~/.pi/agent/mcp.json`, project servers in `.pi/mcp.json`, `/mcp` inside a session, `pi mcp add|list|remove` on the shell. This setup used `pi-mcp-adapter` because that was the only way to get MCP at the time; the adapter is **no longer in `settings.json`**. What it provided — dozens of tool schemas collapsed behind a single proxy tool — built-in MCP does itself via the **codemode** exposure, so the token saving survives the swap.
+
+The 10 servers were carried over from Claude Code's config (`~/.claude.json` → `~/.pi/agent/mcp.json`; the `mcpServers` entry shape is the same), three stale paths were corrected on the way (two CCS servers pointed at a non-existent `~/.ccs/mcp/`; `pencil` pointed at VSCode extension `0.6.54` while `0.6.55` is installed), and every one was checked with `pi mcp list`:
+
+| Server | Transport | Tools | Notes |
+|---|---|---|---|
+| `context7` | stdio | 2 | `resolve-library-id`, `query-docs` |
+| `notebooklm-mcp` | stdio | 39 | |
+| `jira` | stdio | 63 | `env` holds `JIRA_URL` + `JIRA_API_TOKEN` — the reason this file is not in the repo |
+| `firecrawl` | stdio | 28 | self-hosted, `FIRECRAWL_API_URL=http://192.168…` |
+| `exa` | http | 2 | remote, `https://mcp.exa.ai/mcp` |
+| `gitnexus` | stdio | 17 | |
+| `pencil` | stdio | 9 | VSCode extension's MCP server |
+| `db-tms` | stdio | 1 | |
+| `ccs-image-analysis` | stdio | 0 | connects, but the server publishes no tools |
+| `ccs-websearch` | stdio | 0 | same |
+
+All 10 connect (`pi mcp list` → 10 × `connected`). Note what is **not** migrated: the adapter also read **per-project** `.mcp.json` files (in this machine's work repos, e.g. `fms-dev`, `tms-postgres`, `db-duongthuy`) and project-scoped entries in `~/.claude.json` (`gemini`, `gitnexus`, `vi-portal`, `postgres-vi-gpmb-dev`). Built-in pi reads those as `<project>/.pi/mcp.json` — create one per repo where you need them (and note a project config is only honoured once the project is trusted).
+
+```bash
+pi mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem .   # user-level
+pi mcp add -l tools --env API_KEY='${TOOLS_KEY}' -- uvx tools-mcp           # project-level
+pi mcp list                                                                 # status + tool counts
+```
+
+---
+
 ## Scripts
 
-The two setup scripts **never ask for confirmation** — they are safe to run from scripts/CI. Risk is handled with snapshots plus warnings on `stderr`. The third script only **reads**; the fourth edits one file inside the installed pi-lens bundle.
+The two setup scripts **never ask for confirmation** — they are safe to run from scripts/CI. Risk is handled with snapshots plus warnings on `stderr`. The third script only **reads**.
 
 ### `pi-setup-verify-advisor.mjs`
 
@@ -490,29 +513,9 @@ node scripts/pi-setup-verify-advisor.mjs --file <path>
 
 > Why it exists: I once wrote `advisorFailureMode` (taken from an internal variable name in the bundle) when the real key is `gateFailureMode` — the file looked right, did **nothing**, and the warning showed up much later. This script catches exactly that class of mistake.
 
-### `pi-lens-compact-lsp-status.mjs`
-
-pi-lens hardcodes the LSP status line in its bundle (`updateLspStatus`): `` `LSP Active: ${activeIds.join(", ")}` ``, `` `LSP Failed: ${failedIds.join(", ")}` ``, `"LSP Inactive"`. There is no config key for it (`~/.pi-lens/config.json` only has `lsp.enabled`, `widget.visible`, `format.enabled`, `autofix.enabled`, `ui.compactToolLine`, `actionableWarnings.*`), and no other extension can fix it either: `ctx.ui` only exposes `setStatus` (write-only), while `footerData.getExtensionStatuses()` exists **only inside** a footer renderer — and `pi-footer` owns the footer (`setFooter` is last-wins), so its `Pi Extension Status` widget just renders the raw value (its `trimValue` option trims the **leading** part, so it cannot touch the trailing server list).
-
-The script replaces exactly those three strings, and each one must match **exactly once**:
-
-```bash
-node scripts/pi-lens-compact-lsp-status.mjs           # patch (no-op if already patched)
-node scripts/pi-lens-compact-lsp-status.mjs --check   # report state only, no write
-node scripts/pi-lens-compact-lsp-status.mjs --revert  # restore the original bundle
-```
-
-| Exit | Meaning |
-|---|---|
-| `0` | patched / just patched / just reverted |
-| `1` | not patched (with `--check`) or an unrecognised bundle → it does **not** guess |
-| `2` | environment problem (pi-lens bundle not found, bad arguments) |
-
-> ⚠ npm overwrites `pi-lens/dist/index.js` on every `pi update` or pi-lens reinstall → **re-run this script**. That is why a patch script lives in this snapshot repo. An upstream request for a first-class option is filed.
-
 ### `pi-setup-backup.sh`
 
-By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `model-fallback/config.json`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`).
+By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `mcp.json`, `model-fallback/config.json`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`). `mcp.json` and `models.json` are then dropped again by `.pi-setup-exclude` whenever you build the **public** bundle.
 
 > The bundled `models.json` carries the same `$NINEROUTER_API_KEY` placeholder as `config/`. A bundle you build yourself copies the live file **verbatim** — if your `models.json` still holds a literal key, the script's secret scan warns before you publish it.
 
@@ -578,9 +581,11 @@ Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, n
 | `auth.json` in the new dir | `{}` → no secret leakage |
 | Second run | empty log → idempotent |
 | Two consecutive backups | **byte-identical** (deterministic) **(2026-09-23)** |
-| `config/` mirror ≡ live setup | ✅ 21 packages; `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/` byte-identical to `~/.pi/agent` after the mirror; `pi-lens-config.json` and `kitty.conf` byte-identical to `~/.pi-lens/config.json` and `~/.config/kitty/kitty.conf` **(2026-09-28)** |
+| `config/` mirror ≡ live setup | ✅ 20 packages; `settings.json`, `models.json`, `models-store.json`, `advisor.json`, `APPEND_SYSTEM.md`, `extensions/` byte-identical to `~/.pi/agent` after the mirror; `pi-lens-config.json` and `kitty.conf` byte-identical to `~/.pi-lens/config.json` and `~/.config/kitty/kitty.conf`; `mcp.json` deliberately **not** mirrored **(2026-10-07)** |
+| MCP on built-in transport (`pi-mcp-adapter` removed) | ✅ restore → `20/20`, `pi mcp list` → **10/10 connected** (123 tools, codemode exposure), `pi remove npm:pi-mcp-adapter` pruned 29 npm packages; `scripts/pi-setup-patch-extensions.mjs --check` still reports the `pi-footer` patch intact **(2026-10-07)** |
+| `pi-lens` LSP status from config, not patch | ✅ same directory, two runs of the real footer: `ui.compactLspStatus: false` → `LSP Inactive`, `true` → `LSP ✗` **(2026-10-07)** |
 | `models-store.json` is live, not frozen | ⚠️ `checkedAt` advances whenever pi revalidates a model catalog (≈ every 4 h), so a backup taken after such a revalidation differs from the previous one. Two backups taken back-to-back are still **byte-identical**; the file contains **no credentials** |
-| `.pi-setup-exclude` coverage | ✅ mirror reports **93 excluded files** across `orca-*` / `agentkit-*` / `herdr-*` / advisor outcome state **(2026-09-28)** |
+| `.pi-setup-exclude` coverage | ✅ mirror reports **95 excluded files** across `orca-*` / `agentkit-*` / `herdr-*` / advisor outcome state / `models.json` / `mcp.json` **(2026-10-07)** |
 | `context-bar` rendering | ✅ direct `render()` call: 0/25/**71%→yellow**/**92%→red**/100%, correctly scaled for 200k and 1M |
 | `--no-statusline` | ✅ `pi-footer.json` disappears from the bundle (different SHA than the default) |
 | `--hooks` + `.pi-setup-exclude` | ✅ hooks survive, "override" warning printed, 54 files remain |
@@ -620,7 +625,7 @@ Tested by restoring into a **brand-new** config dir via `PI_CODING_AGENT_DIR`, n
 - **The scripts need a POSIX shell** → on Windows run them in **Git Bash** or **WSL**; PowerShell/cmd cannot run them.
 - **Statusline icons need a Nerd Font** → using the unpatched JetBrains Mono from `fonts/` breaks icons into ◆/✦/`?`; see [Terminal font](#terminal-font-nerd-font-required).
 - **`pi` installs globally per Node version** → `nvm use` / `fnm use` to a different version can make the `pi` command disappear; reinstall it globally for that version.
-- **The `pi-lens` LSP status line is a bundle patch**, not config → `pi update` overwrites it; re-run `node scripts/pi-lens-compact-lsp-status.mjs` (the script stops with exit `1` if pi-lens changes the shape of that function instead of guessing).
+- **`mcp.json` is not in the repo** (real tokens in `env`) → on the new machine add servers with `pi mcp add`, or copy your private `~/.pi/agent/mcp.json` yourself. The snapshot documents the list it was built from; nothing from `~/.claude.json` is migrated automatically.
 
 ---
 

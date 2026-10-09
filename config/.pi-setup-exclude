@@ -20,3 +20,17 @@ extensions/herdr-*.ts
 # State của pi-advisor-flow (salt + log outcome) — không phải setup, không public
 advisor-outcomes.jsonl
 advisor-outcomes-salt
+
+# File backup tay nằm lẫn trong extensions/ (sinh ra khi sửa extension trực tiếp
+# trên máy). Không phải setup, mirror bỏ qua nhờ dòng này.
+extensions/*.bak*
+
+# models.json: bản LIVE (rewrite 06/10) chứa apiKey 9router dạng literal, còn bản
+# từng commit trước đây dùng "$NINEROUTER_API_KEY" (env) nên lịch sử git vẫn sạch.
+# Loại khỏi snapshot để key literal không lọt vào repo; máy mới tự khai lại provider.
+models.json
+
+# mcp.json: MCP built-in của pi (pi >= 1.0). Cùng lý do như models.json — bản LIVE chứa
+# token thật trong env (JIRA_API_TOKEN, JIRA_URL nội bộ công ty…) nên không lên repo
+# public. Máy mới tự khai lại bằng `pi mcp add`, hoặc copy file riêng.
+mcp.json

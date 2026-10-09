@@ -35,7 +35,9 @@ EXTERNAL_MANIFEST="external-configs.txt"
 # 'hooks' không cần liệt kê riêng: chúng nằm trong cây extensions/.
 # 'model-fallback/config.json' là file lồng trong thư mục riêng (pi-model-fallback); chỉ
 # restore file config, KHÔNG restore model-fallback/state.json (state theo máy).
-ITEMS=(settings.json APPEND_SYSTEM.md models.json models-store.json advisor.json 99extensions.json model-fallback/config.json extensions skills memory missions sessions auth.json)
+# 'mcp.json' (MCP built-in của pi) chứa token thật (JIRA_API_TOKEN…) nên BỊ LOẠI khỏi
+# config/ public — máy nào có file này trong nguồn thì được copy, máy khác tự khai lại.
+ITEMS=(settings.json APPEND_SYSTEM.md models.json models-store.json advisor.json 99extensions.json model-fallback/config.json mcp.json extensions skills memory missions sessions auth.json)
 
 info() { printf '%s\n' "$*"; }
 warn() { printf '⚠  %s\n' "$*" >&2; }
@@ -266,16 +268,5 @@ info "Bước tiếp theo:"
 info "  1. mở pi rồi /login cho từng provider   (opencode-go, deepseek, openai-codex)"
 info "  2. pi auth check --provider opencode-go"
 info "  3. thử 1 extension, ví dụ /btw <câu hỏi>"
-# Dòng status LSP của pi-lens chỉ gọn được bằng script vá bundle (không có config nào cho
-# nó) → báo trạng thái THẬT của đích vừa restore thay vì để người đọc tự nhớ. Chỉ báo,
-# KHÔNG tự sửa: restore không sửa code của package bên thứ ba.
-LENS_PATCH="$SCRIPT_DIR/pi-lens-compact-lsp-status.mjs"
-LENS_STEP="(tùy chọn) rút gọn dòng status LSP: node scripts/pi-lens-compact-lsp-status.mjs"
-if [ -f "$LENS_PATCH" ] && command -v node >/dev/null 2>&1; then
-	if node "$LENS_PATCH" --check --pkg "$TARGET/npm/node_modules/pi-lens/dist/index.js" >/dev/null 2>&1; then
-		LENS_STEP="pi-lens LSP status đã ở dạng gọn (LSP ✓ / LSP ✗)"
-	fi
-fi
-info "  4. $LENS_STEP"
 [ "$SCRATCH" -eq 1 ] && info "  (scratch) kiểm tra tay:  PI_CODING_AGENT_DIR=$TARGET pi list"
 exit 0
