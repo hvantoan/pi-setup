@@ -2,9 +2,9 @@
 
 # pi-setup
 
-**A portable snapshot of a [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 20 extensions on a new machine.**
+**A portable snapshot of a [`pi`](https://github.com/earendil-works/pi) setup — clone it and rebuild the full set of 21 extensions on a new machine.**
 
-pi `1.0.4` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-10-07
+pi `1.3.0` · Node `24` · macOS · Linux · Windows (Git Bash) · updated 2026-10-07
 
 **English** · [Tiếng Việt](./README.vi.md)
 
@@ -29,7 +29,7 @@ The mechanism: `settings.json` holds a `packages` array; pi reads it on startup 
 
 ```bash
 # 1) install pi, exact version
-npm i -g @earendil-works/pi-coding-agent@1.0.4
+npm i -g @earendil-works/pi-coding-agent@1.3.0
 
 # 2) clone
 git clone https://github.com/hvantoan/pi-setup.git
@@ -82,7 +82,7 @@ The full Windows sequence:
 ```bash
 # inside Git Bash
 fnm use 24
-npm i -g @earendil-works/pi-coding-agent@1.0.4
+npm i -g @earendil-works/pi-coding-agent@1.3.0
 git clone https://github.com/hvantoan/pi-setup.git && cd pi-setup
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # rehearsal
 ./scripts/pi-setup-restore.sh --install --verify                                 # for real
@@ -129,7 +129,7 @@ pi-setup/
 │   └── pi-setup-portable.tar.gz     ready-to-download bundle (filtered — see below)
 └── config/                          setup snapshot (plain files, git-diffable)
     ├── .pi-setup-exclude           exclusion globs — backup honours this file
-    ├── settings.json               manifest of 20 packages + model/theme/compaction
+    ├── settings.json               manifest of 21 packages + model/theme/compaction
     ├── advisor.json                pi-advisor-flow config (at the config-dir root)
     ├── pi-lens-config.json          pi-lens config — lives in ~/.pi-lens/, OUTSIDE the config dir
     ├── external-configs.txt        manifest: which file goes where on restore
@@ -213,7 +213,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-A ready-made bundle so you don't have to clone and run the backup yourself: **11 files** — `settings.json` (20 packages), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts`, and `model-fallback/config.json`.
+A ready-made bundle so you don't have to clone and run the backup yourself: **11 files** — `settings.json` (21 packages), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts`, and `model-fallback/config.json`.
 
 It is the script's full default bundle, **filtered** through `.pi-setup-exclude` so machine-only material never reaches this public repo:
 
@@ -223,11 +223,11 @@ It is the script's full default bundle, **filtered** through `.pi-setup-exclude`
 | `extensions/agentkit-*` (95 files) | Contains `native-skill-paths.json` + `native-skill-hashes.json` (**absolute paths**, a list of 107 skills) and `hooks/.logs/hook-log.jsonl` (activity log) |
 | `extensions/herdr-agent-state.ts` | herdr-generated (v9) and overwritten on every herdr update |
 
-Restoring this bundle yields the same file set as `config/` — all 20 extensions plus the statusline. It is a snapshot of this machine, so its `settings.json` can differ from `config/settings.json` in keys changed afterwards (e.g. default model, TUI mode). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
+Restoring this bundle yields the same file set as `config/` — all 21 extensions plus the statusline. It is a snapshot of this machine, so its `settings.json` can differ from `config/settings.json` in keys changed afterwards (e.g. default model, TUI mode). For an unfiltered bundle (keeping machine state) drop `--exclude-file`.
 
 ---
 
-## The 20 extensions in this snapshot
+## The 21 extensions in this snapshot
 
 | # | Package | Version | What it does |
 |---|---|---|---|
@@ -251,10 +251,11 @@ Restoring this bundle yields the same file set as `config/` — all 20 extension
 | 18 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
 | 19 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
 | 20 | `pi-impeccable` | 0.1.0 | runs Impeccable skills without blocking the agent |
+| 21 | `@tian.zuo/pi-devin-acp` | 0.5.2 | uses Devin models inside pi over the Agent Client Protocol, with pi as the UI |
 
 > Versions are **for reference at snapshot time (2026-10-09)**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
-Default: `9router/ocg/deepseek-v4.1-flash` (thinking `high`). No `enabledModels` filter is set, so every provider's models are selectable (the Devin provider was removed — no package, no patch).
+Default: `9router/ocg/deepseek-v4.1-flash` (thinking `high`). No `enabledModels` filter is set, so every provider's models are selectable — Devin is back as an ACP client (`@tian.zuo/pi-devin-acp`), not a provider entry in `models.json`.
 Compaction has two knobs. **When** to compact is decided by `config/extensions/compaction-policy.ts`: **40%** of the window for models ≥500K context (1M-context 9router → ~400K tokens), **75%** below that (`openai-codex` 272K → ~204K, `gpt-5.3-codex-spark` 128K → ~96K). The built-in trigger `contextTokens > contextWindow - reserveTokens` stays on as a backstop: `9router/ocg/deepseek-v4.1-flash` gets a per-model `reserveTokens: 64000` (backstop ~936K), everything else keeps the global `16384`. `reserveTokens` also caps the summary length at `min(0.8 × reserve, model.maxTokens)`.
 
 ---

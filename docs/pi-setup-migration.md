@@ -1,6 +1,6 @@
 # Hướng dẫn migrate setup `pi` sang máy khác
 
-> Cập nhật: **2026-10-07** · pi `1.0.4` · Node `v24`
+> Cập nhật: **2026-10-07** · pi `1.3.0` · Node `v24`
 > Repo: `pi-setup` — công cụ + snapshot setup, dùng để dựng lại nguyên bộ extension `pi` trên máy khác.
 
 ---
@@ -10,7 +10,7 @@
 **Máy mới:**
 
 ```bash
-npm i -g @earendil-works/pi-coding-agent@1.0.4   # cài pi trước (đúng version)
+npm i -g @earendil-works/pi-coding-agent@1.3.0   # cài pi trước (đúng version)
 git clone https://github.com/hvantoan/pi-setup.git
 cd pi-setup
 ./scripts/pi-setup-restore.sh --install --verify
@@ -113,15 +113,15 @@ git add -A && git commit -m "chore(setup): refresh pi config snapshot" && git pu
 
 ```bash
 nvm install 24 && nvm use 24                        # pi cài global theo từng Node version
-npm i -g @earendil-works/pi-coding-agent@1.0.4
-pi --version                                        # phải ra 1.0.4
+npm i -g @earendil-works/pi-coding-agent@1.3.0
+pi --version                                        # phải ra 1.3.0
 ```
 
 ```bash
 # Windows (Git Bash) — thường dùng fnm thay nvm
 fnm install 24 && fnm use 24
-npm i -g @earendil-works/pi-coding-agent@1.0.4
-pi --version                                        # phải ra 1.0.4
+npm i -g @earendil-works/pi-coding-agent@1.3.0
+pi --version                                        # phải ra 1.3.0
 ```
 
 > pi cài **theo từng Node version** của `nvm`/`fnm`. Nếu sau này `nvm use` / `fnm use` sang version khác mà không thấy lệnh `pi`, đó là lý do — cài lại global cho version đó.
@@ -584,7 +584,7 @@ Ngoài 3 nhóm file do công cụ khác sinh (`orca-*`, `agentkit-*`, `herdr-*` 
 
 ## Checklist
 
-- [ ] Máy mới: Node đúng version (`nvm` — hoặc `fnm` trên Windows) → `npm i -g @earendil-works/pi-coding-agent@1.0.4`
+- [ ] Máy mới: Node đúng version (`nvm` — hoặc `fnm` trên Windows) → `npm i -g @earendil-works/pi-coding-agent@1.3.0`
 - [ ] **Windows:** đang ở trong **Git Bash** (không PowerShell/cmd)
 - [ ] `git clone https://github.com/hvantoan/pi-setup.git`
 - [ ] `./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify` (thử an toàn)

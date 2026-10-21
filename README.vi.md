@@ -2,9 +2,9 @@
 
 # pi-setup
 
-**Portable snapshot của một setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 20 extensions trên máy mới.**
+**Portable snapshot của một setup [`pi`](https://github.com/earendil-works/pi) — clone về là dựng lại nguyên bộ 21 extensions trên máy mới.**
 
-pi `1.0.4` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-10-07
+pi `1.3.0` · Node `24` · macOS · Linux · Windows (Git Bash) · cập nhật 2026-10-07
 
 [English](./README.md) · **Tiếng Việt**
 
@@ -28,7 +28,7 @@ Cơ chế: `settings.json` chứa mảng `packages`; pi đọc nó lúc khởi �
 
 ```bash
 # 1) cài pi, đúng version
-npm i -g @earendil-works/pi-coding-agent@1.0.4
+npm i -g @earendil-works/pi-coding-agent@1.3.0
 
 # 2) clone
 git clone https://github.com/hvantoan/pi-setup.git
@@ -82,7 +82,7 @@ Ví dụ đầy đủ trên Windows:
 ```bash
 # trong Git Bash
 fnm use 24
-npm i -g @earendil-works/pi-coding-agent@1.0.4
+npm i -g @earendil-works/pi-coding-agent@1.3.0
 git clone https://github.com/hvantoan/pi-setup.git && cd pi-setup
 ./scripts/pi-setup-restore.sh --from-config config --scratch --install --verify   # thử an toàn
 ./scripts/pi-setup-restore.sh --install --verify                                 # làm thật
@@ -128,7 +128,7 @@ pi-setup/
 │   └── pi-setup-portable.tar.gz     bundle sẵn để tải (đã lọc — xem bên dưới)
 └── config/                          snapshot setup (plain file, diff được bằng git)
     ├── .pi-setup-exclude           glob loại trừ — backup tôn trọng file này
-    ├── settings.json               manifest 20 packages + model/theme/compaction
+    ├── settings.json               manifest 21 packages + model/theme/compaction
     ├── advisor.json                config pi-advisor-flow (ở gốc config dir)
     ├── pi-lens-config.json          config pi-lens — nằm ở ~/.pi-lens/ NGOÀI config dir
     ├── external-configs.txt        manifest: file nào đặt về đâu khi restore
@@ -212,7 +212,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **11 file** (mục + config ngoài + manifest) — `settings.json` (20 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts` và `model-fallback/config.json`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **11 file** (mục + config ngoài + manifest) — `settings.json` (21 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts` và `model-fallback/config.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -226,7 +226,7 @@ Restore bundle này cho cùng bộ file như `config/` — đủ 20 extension + 
 
 ---
 
-## 20 extensions trong snapshot
+## 21 extensions trong snapshot
 
 | # | Package | Version | Làm gì |
 |---|---|---|---|
@@ -250,10 +250,11 @@ Restore bundle này cho cùng bộ file như `config/` — đủ 20 extension + 
 | 18 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checker, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. Trong setup này đã tắt widget + autoformat + autofix (xem mục riêng) |
 | 19 | `@injaneity/pi-computer-use` | 0.5.1 | cho agent điều khiển app desktop trên macOS, Windows và Linux qua accessibility API của hệ điều hành: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Cài helper riêng cho user ở `~/Applications/pi-computer-use.app`; macOS cần cấp **Accessibility** + **Screen Recording** cho helper, và bước setup chỉ chạy trong session pi tương tác → ở chế độ `-p` (print) extension chưa làm được gì cho tới khi bạn cấp quyền |
 | 20 | `pi-impeccable` | 0.1.0 | chạy Impeccable skills trong Pi mà không chặn agent |
+| 21 | `@tian.zuo/pi-devin-acp` | 0.5.2 | dùng model Devin trong pi qua Agent Client Protocol, pi đóng vai trò UI |
 
 > Version là **tham khảo tại thời điểm snapshot (2026-10-09)**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
-Provider mặc định: `9router/ocg/deepseek-v4.1-flash` (thinking `high`). Không đặt filter `enabledModels`, nên model của mọi provider đều chọn được (provider Devin đã bị gỡ — không còn package lẫn bản vá).
+Provider mặc định: `9router/ocg/deepseek-v4.1-flash` (thinking `high`). Không đặt filter `enabledModels`, nên model của mọi provider đều chọn được — Devin quay lại dưới dạng ACP client (`@tian.zuo/pi-devin-acp`), không phải provider trong `models.json`.
 Compaction có 2 knob. **Khi nào** nén do `config/extensions/compaction-policy.ts` quyết định: **40%** window với model ≥500K context (9router context 1M → ~400K token), **75%** dưới ngưỡng đó (`openai-codex` 272K → ~204K, `gpt-5.3-codex-spark` 128K → ~96K). Trigger gốc `contextTokens > contextWindow - reserveTokens` vẫn bật làm backstop: `9router/ocg/deepseek-v4.1-flash` có `reserveTokens: 64000` riêng (backstop ~936K), phần còn lại giữ mức toàn cục `16384`. `reserveTokens` cũng là trần độ dài bản tóm tắt: `min(0.8 × reserve, model.maxTokens)`.
 
 ---

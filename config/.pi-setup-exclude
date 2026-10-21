@@ -6,6 +6,10 @@
 # Orca tự sinh lại khi quản lý pi trên máy mới, nên không mất chức năng.
 extensions/orca-*.ts
 
+# Extension mailbox do intec/orca cài (index.js + dist, code đã build kèm
+# glue 127.0.0.1 hook). Cùng nhóm "công cụ khác tự cài lại" → loại khỏi repo.
+extensions/intec-orca-mailbox*
+
 # 2 thư mục do AgentKit (ak CLI) tự cài vào ~/.pi/agent/extensions/.
 # Chứa cache path tuyệt đối (native-skill-paths.json 157 KB,
 # native-skill-hashes.json 280 KB) + 1.2 MB hook đã sinh sẵn.

@@ -1,7 +1,7 @@
 # pi-setup
 
 Snapshot/restore repo for a personal [pi](https://github.com/earendil-works/pi-coding-agent)
-(`@earendil-works/pi-coding-agent@1.0.4`) agent setup: config, extensions,
+(`@earendil-works/pi-coding-agent@1.3.0`) agent setup: config, extensions,
 statusline, model-fallback, advisor config. Public mirror of
 `upstream: mrgoonie/zuey-pi-setup`.
 
