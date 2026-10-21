@@ -45,7 +45,7 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 | `settings.json` | 4 KB | ✅ **bắt buộc** | 20 packages, theme, compaction, thinkingBudgets, retry |
 | `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
 | `models.json` | 1.6 KB | ❌ **credential** | khai báo provider **9router** (baseUrl `http://127.0.0.1:20128/v1`, `api: openai-completions`) + model `ocg/deepseek-v4.1-flash` (`contextWindow` 1.000.000, `maxTokens` 64.000 — khớp `context_length`/`max_completion_tokens` mà gateway báo). **Bản live chứa `apiKey` dạng literal** (bản commit cũ dùng `$NINEROUTER_API_KEY`, nên lịch sử git vẫn sạch) → `models.json` nằm trong `.pi-setup-exclude`, máy mới tự khai lại provider. Không có file này thì `9router` là provider lạ, `pi --list-models` không thấy model nào |
-| `extensions/` | 1.4 MB | ✅ (lọc) | extension tự viết local + config của chúng (`pi-footer.json`, `pi-footer-cache-tps.ts`, `pi-tool-display/config.json`). `orca-*.ts` (Orca sinh), `agentkit-*` (AgentKit sinh) và `herdr-agent-state.ts` (herdr sinh) bị loại — xem `.pi-setup-exclude` |
+| `extensions/` | 1.4 MB | ✅ (lọc) | extension tự viết local (`pi-footer.json`, `pi-footer-cache-tps.ts`, `compaction-policy.ts`). `orca-*.ts` (Orca sinh), `agentkit-*` (AgentKit sinh) và `herdr-agent-state.ts` (herdr sinh) bị loại — xem `.pi-setup-exclude` |
 | `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
 | `model-fallback/config.json` | — | ✅ **mặc định** | rule của `pi-model-fallback`, ở thư mục `model-fallback/` (không trong `extensions/`) nên liệt kê riêng; **chỉ lấy file config** — `state.json` cùng thư mục là state theo máy (entry + mốc cooldown), không đưa vào artifact |
 | `extensions/*/hooks/` | 544 KB | ⚠️ opt-in | `--hooks` (mặc định đã nằm trong `extensions/` khi không lọc) |
@@ -95,8 +95,7 @@ pi-setup/
     └── extensions/
         ├── compaction-policy.ts     ← trigger nén theo % window (40%/75%, xem mục Compaction)
         ├── pi-footer-cache-tps.ts
-        ├── pi-footer.json
-        └── pi-tool-display/config.json
+        └── pi-footer.json
 ```
 
 `models.json` **không** nằm trong `config/`: bản live đang chứa `apiKey` literal → `.pi-setup-exclude` loại nó. Máy mới khai lại provider 9router bằng tay (xem *Bước 3*).

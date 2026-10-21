@@ -139,10 +139,9 @@ pi-setup/
     ├── model-fallback/
     │   └── config.json            rule fallback của pi-model-fallback (state.json không lấy)
     └── extensions/                 extension tự viết, không có trên npm
+        ├── compaction-policy.ts    trigger nén theo % window (40%/75%)
         ├── pi-footer-cache-tps.ts  đẩy cache-TTL + tốc độ token (t/s) vào pi-footer
-        ├── pi-footer.json          layout statusline (gồm context bar)
-        └── pi-tool-display/
-            └── config.json        chế độ hiển thị output + diff view của pi-tool-display
+        └── pi-footer.json          layout statusline (gồm context bar)
 ```
 
 `config/` là **mirror** của phần setup trong `~/.pi/agent`. Mọi thứ khác (cache, secret, history) **không** được đưa vào.
@@ -213,7 +212,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **12 file** (mục + config ngoài + manifest) — `settings.json` (20 package), `APPEND_SYSTEM.md`, `models.json` (provider 9router), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json` và `model-fallback/config.json`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **11 file** (mục + config ngoài + manifest) — `settings.json` (20 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts` và `model-fallback/config.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -250,12 +249,12 @@ Restore bundle này cho cùng bộ file như `config/` — đủ 20 extension + 
 | 17 | `@tmustier/pi-session-recap` | 0.5.1 | recap “while you were away”: soạn sẵn bản tóm tắt khi bạn rời session, hiện ở cuối transcript / trên editor lúc quay lại. Cho workflow nhiều agent chạy song song |
 | 18 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checker, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. Trong setup này đã tắt widget + autoformat + autofix (xem mục riêng) |
 | 19 | `@injaneity/pi-computer-use` | 0.5.1 | cho agent điều khiển app desktop trên macOS, Windows và Linux qua accessibility API của hệ điều hành: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Cài helper riêng cho user ở `~/Applications/pi-computer-use.app`; macOS cần cấp **Accessibility** + **Screen Recording** cho helper, và bước setup chỉ chạy trong session pi tương tác → ở chế độ `-p` (print) extension chưa làm được gì cho tới khi bạn cấp quyền |
-| 20 | `pi-tool-display` | 0.5.0 | thay cách render mặc định của `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` bằng bản tóm tắt gọn (`summary`/`count`/`bars`), bash output thu gọn được và diff view 2 cột. Config ở `config/extensions/pi-tool-display/config.json` |
+| 20 | `pi-impeccable` | 0.1.0 | chạy Impeccable skills trong Pi mà không chặn agent |
 
-> Version là **tham khảo tại thời điểm snapshot (2026-09-28)**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
+> Version là **tham khảo tại thời điểm snapshot (2026-10-09)**; nguồn sự thật là `config/settings.json`. Chỉ `pi-smart-fetch` được pin cứng, phần còn lại floating → máy mới sẽ lấy bản mới nhất. Muốn khớp chính xác, pin lại trong `config/settings.json`.
 
-Provider mặc định: `9router/ol/deepseek-v4.1-flash` (thinking `high`). Không đặt filter `enabledModels`, nên model của mọi provider đều chọn được (provider Devin đã bị gỡ — không còn package lẫn bản vá).
-Auto-compact chạy theo ngân sách token riêng của từng model: pi compact khi `contextTokens > contextWindow - reserveTokens`. Model 9router (context 1M) có `reserveTokens: 700000` nên compact khi vượt **300K token**. Phần còn lại giữ mức mặc định `16384`: model `openai-codex` (context 272K) compact khi vượt **~256K**, còn `gpt-5.3-codex-spark` (context 128K) khi vượt ~112K.
+Provider mặc định: `9router/ocg/deepseek-v4.1-flash` (thinking `high`). Không đặt filter `enabledModels`, nên model của mọi provider đều chọn được (provider Devin đã bị gỡ — không còn package lẫn bản vá).
+Compaction có 2 knob. **Khi nào** nén do `config/extensions/compaction-policy.ts` quyết định: **40%** window với model ≥500K context (9router context 1M → ~400K token), **75%** dưới ngưỡng đó (`openai-codex` 272K → ~204K, `gpt-5.3-codex-spark` 128K → ~96K). Trigger gốc `contextTokens > contextWindow - reserveTokens` vẫn bật làm backstop: `9router/ocg/deepseek-v4.1-flash` có `reserveTokens: 64000` riêng (backstop ~936K), phần còn lại giữ mức toàn cục `16384`. `reserveTokens` cũng là trần độ dài bản tóm tắt: `min(0.8 × reserve, model.maxTokens)`.
 
 ---
 

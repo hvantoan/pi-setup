@@ -140,10 +140,9 @@ pi-setup/
     ├── model-fallback/
     │   └── config.json            pi-model-fallback rules (state.json is not taken)
     └── extensions/                 locally written extensions, not on npm
+        ├── compaction-policy.ts    per-window compaction trigger (40%/75%)
         ├── pi-footer-cache-tps.ts  pushes cache-TTL + token speed (t/s) into pi-footer
-        ├── pi-footer.json          statusline layout (includes the context bar)
-        └── pi-tool-display/
-            └── config.json        pi-tool-display output modes + diff view
+        └── pi-footer.json          statusline layout (includes the context bar)
 ```
 
 `config/` is a **mirror** of the setup portion of `~/.pi/agent`. Everything else (cache, secrets, history) is **not** included.
@@ -214,7 +213,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-A ready-made bundle so you don't have to clone and run the backup yourself: **12 files** — `settings.json` (20 packages), `APPEND_SYSTEM.md`, `models.json` (9router provider), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/pi-tool-display/config.json`, and `model-fallback/config.json`.
+A ready-made bundle so you don't have to clone and run the backup yourself: **11 files** — `settings.json` (20 packages), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts`, and `model-fallback/config.json`.
 
 It is the script's full default bundle, **filtered** through `.pi-setup-exclude` so machine-only material never reaches this public repo:
 
@@ -251,12 +250,12 @@ Restoring this bundle yields the same file set as `config/` — all 20 extension
 | 17 | `@tmustier/pi-session-recap` | 0.5.1 | "while you were away" recap: drafts a short summary when you leave a session and shows it at the end of the transcript / above the editor when you return. Built for many parallel agents |
 | 18 | `pi-lens` | 4.2.1 | LSP diagnostics + navigation, linters/type-checkers, formatter, ast-grep/tree-sitter, `symbol_search`, read-guard, `/lens-map`. In this setup the widget, autoformat and autofix are disabled (see its section) |
 | 19 | `@injaneity/pi-computer-use` | 0.5.1 | lets an agent drive desktop apps on macOS, Windows and Linux through the platform accessibility APIs: `find_roots`, `observe_ui`, `search_ui`, `expand_ui`, `inspect_ui`, `act_ui`, `read_text`, `wait_for`. Ships a per-user helper at `~/Applications/pi-computer-use.app`; macOS needs **Accessibility** + **Screen Recording** granted to it, and the one-time setup flow requires an interactive Pi session, so nothing works in `-p` print mode until you grant them |
-| 20 | `pi-tool-display` | 0.5.0 | replaces the built-in rendering of `read`/`grep`/`find`/`ls`/`bash`/`edit`/`write` with compact summaries (`summary`/`count`/`bars` modes), collapsible bash output and a side-by-side diff view. Configured in `config/extensions/pi-tool-display/config.json` |
+| 20 | `pi-impeccable` | 0.1.0 | runs Impeccable skills without blocking the agent |
 
-> Versions are **for reference at snapshot time (2026-09-28)**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
+> Versions are **for reference at snapshot time (2026-10-09)**; the source of truth is `config/settings.json`. Only `pi-smart-fetch` is hard-pinned, the rest float → a new machine pulls the latest. Pin them in `config/settings.json` if you need an exact match.
 
-Default: `9router/ol/deepseek-v4.1-flash` (thinking `high`). No `enabledModels` filter is set, so every provider's models are selectable (the Devin provider was removed — no package, no patch).
-Auto-compaction runs on a per-model token budget: pi compacts when `contextTokens > contextWindow - reserveTokens`. The 1M-context 9router models get a per-model `reserveTokens: 700000`, so they compact above **300K tokens**. Everything else keeps the global `16384` reserve: the `openai-codex` models (272K context) therefore compact above **~256K**, and `gpt-5.3-codex-spark` (128K context) above ~112K.
+Default: `9router/ocg/deepseek-v4.1-flash` (thinking `high`). No `enabledModels` filter is set, so every provider's models are selectable (the Devin provider was removed — no package, no patch).
+Compaction has two knobs. **When** to compact is decided by `config/extensions/compaction-policy.ts`: **40%** of the window for models ≥500K context (1M-context 9router → ~400K tokens), **75%** below that (`openai-codex` 272K → ~204K, `gpt-5.3-codex-spark` 128K → ~96K). The built-in trigger `contextTokens > contextWindow - reserveTokens` stays on as a backstop: `9router/ocg/deepseek-v4.1-flash` gets a per-model `reserveTokens: 64000` (backstop ~936K), everything else keeps the global `16384`. `reserveTokens` also caps the summary length at `min(0.8 × reserve, model.maxTokens)`.
 
 ---
 

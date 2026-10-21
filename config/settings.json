@@ -31,7 +31,6 @@
     "npm:pi-lens",
     "npm:@99percentpeople/pi-todo",
     "npm:@injaneity/pi-computer-use",
-    "npm:pi-tool-display",
     "npm:pi-impeccable"
   ],
   "showCacheMissNotices": true,

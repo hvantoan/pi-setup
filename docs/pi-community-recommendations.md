@@ -233,9 +233,9 @@ Hai cảnh báo cụ thể cộng đồng hay nhắc:
 
 ## 12. Đối chiếu với setup trong repo này và bước tiếp theo
 
-`config/settings.json` hiện khai báo 21 package. So với các khuyến nghị ở trên:
+`config/settings.json` hiện khai báo 20 package. So với các khuyến nghị ở trên:
 
-Đã khớp: `pi-web-access`, `pi-mcp-adapter`, `pi-subagents`, `@juicesharp/rpiv-ask-user-question`, `pi-goal-x`, `pi-memory`, `pi-lens`, `pi-powerline-footer`, `pi-tool-display`, `pi-model-fallback`, `pi-advisor-flow` + extension nội bộ `compaction-policy.ts` (đúng pattern "lời khuyên từ model thứ hai" và "tự thay compaction" mà cộng đồng khuyến nghị), cùng `pi-footer` + extension nội bộ `pi-footer-cache-tps.ts` (quan sát token/TPS).
+Đã khớp: `pi-web-access`, `pi-subagents`, `@juicesharp/rpiv-ask-user-question`, `pi-goal-x`, `pi-memory`, `pi-lens`, `pi-powerline-footer`, `pi-model-fallback`, `pi-advisor-flow` + extension nội bộ `compaction-policy.ts` (đúng pattern "lời khuyên từ model thứ hai" và "tự thay compaction" mà cộng đồng khuyến nghị), cùng `pi-footer` + extension nội bộ `pi-footer-cache-tps.ts` (quan sát token/TPS). (`pi-tool-display` đã gỡ khỏi snapshot — trùng chức năng với pi-claudify; `pi-mcp-adapter` cũng không còn, MCP đã built-in.)
 
 Khoảng trống đáng cân nhắc, theo thứ tự giá trị:
 
