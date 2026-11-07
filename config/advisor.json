@@ -6,17 +6,15 @@
   "advisorRedactSecrets": true,
   "advisorTrackedFileContent": true,
   "advisorUntrackedContent": true,
-  "gateFailureMode": "block-session",
-  "advisor": "devin/swe-2",
-  "executor": "devin/swe-2",
+  "gateFailureMode": "warn-and-continue",
+  "advisor": "openai-codex/gpt-5.6-sol",
   "simpleMode": false,
-  "contextMaxChars": 25000,
-  "advisorEffort": "high",
-  "advisorFallbackModel": "9router/ocg/deepseek-v4.1-flash",
-  "advisorModelWhitelist": [
-    "9router/ocg/deepseek-v4.1-flash",
-    "devin/swe-2"
-  ],
+  "contextMaxChars": 200000,
+  "advisorModelWhitelist": [],
   "advisorSessionSummary": true,
-  "executorEffort": "medium"
+  "advisorScoutTimeoutMs": 30000,
+  "executor": "devin/swe-2-flash",
+  "advisorEffort": "medium",
+  "advisorLoopThreshold": 3,
+  "advisorDisableSameModel": false
 }

@@ -38,3 +38,12 @@ models.json
 # token thật trong env (JIRA_API_TOKEN, JIRA_URL nội bộ công ty…) nên không lên repo
 # public. Máy mới tự khai lại bằng `pi mcp add`, hoặc copy file riêng.
 mcp.json
+
+# 105 skill ak-* là bộ AgentKit (~18 MB) — `ak` CLI tự cài lại trên máy mới,
+# cùng lý do đã loại extensions/agentkit-*. Chỉ giữ skill tự viết/quản lý
+# (vt-*, herdr*, impeccable, shadcn…, ~3 MB).
+skills/ak-*
+
+# memory/ không lên repo public: MEMORY.md/SCRATCHPAD.md ghi IP nội bộ, tên DB,
+# chi tiết auth của project thật. `--memory` vẫn dùng được cho tarball riêng.
+memory/*

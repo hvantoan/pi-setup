@@ -56,7 +56,7 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 | `~/.pi-lens/config.json` | 136 B | ✅ **mặc định** | config `pi-lens`, nằm **NGOÀI** config dir → lấy qua `EXTERNAL_CONFIGS`, vào artifact thành `pi-lens-config.json` + manifest `external-configs.txt` (⚠️ **không** đặt tên artifact là `pi-lens.json`: trùng basename legacy của pi-lens → bị đọc như project config deprecated, xem README) |
 | `advisor.json` | — | ✅ **mặc định** | config `pi-advisor-flow`, ở **gốc** config dir (không trong `extensions/`) nên liệt kê riêng; chỉ có sau `/advisor` hoặc `/advisor-settings` |
 | `advisor-outcomes.jsonl`, `advisor-outcomes-salt` | — | ❌ | log outcome + salt theo máy của `pi-advisor-flow` → nằm trong `.pi-setup-exclude` |
-| `skills/` | 24 MB | ⚠️ opt-in | `--skills` — dereference symlink sang AgentKit (`~/.agents/skills`) |
+| `skills/` | 3.4 MB | ✅ **mặc định** | skill tự viết (`vt-*`, `herdr*`, `impeccable`, `shadcn`…), symlink dereference → tự chứa. `skills/ak-*` (105 skill AgentKit, ~18 MB) bị `.pi-setup-exclude` loại vì `ak` tự cài lại |
 | `memory/` | — | ⚠️ opt-in | `--memory` |
 | `missions/` | 184 KB | ⚠️ opt-in | `--missions` — state của `pi-goal-x`; chứa tên project/khách hàng + đường dẫn nội bộ |
 | `trust.json` | 4 KB | ❌ | chứa path tuyệt đối của máy cũ → script có `--with-trust` nếu cần |
@@ -64,7 +64,7 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 | `npm/` | ~250 MB | ❌ | pi tự cài lại |
 | `sessions/` | 57 MB | ⚠️ opt-in | `--sessions` — history chat; restore rồi thì `pi --resume` |
 
-`missions/`/`memory/`/`skills/`/`auth.json`/`sessions/` **không** nằm trong bản mặc định vì chúng là *state* hoặc *secret*, không phải *setup*. Bật từng cái bằng flag tương ứng, hoặc `--with-state` (= `--skills --memory --missions`).
+`missions/`/`memory/`/`auth.json`/`sessions/` **không** nằm trong bản mặc định vì chúng là *state* hoặc *secret*, không phải *setup* — bật bằng flag tương ứng hoặc `--with-state`. `skills/` thì **có** trong snapshot `config/`, nhưng chỉ skill tự viết: `skills/ak-*` (AgentKit) và `memory/*` bị `.pi-setup-exclude` loại khỏi artifact public.
 
 ---
 
@@ -103,7 +103,8 @@ pi-setup/
 `config/` là **mirror** của `~/.pi/agent` (chỉ các mục setup). Cập nhật lại sau khi bạn đổi setup:
 
 ```bash
-./scripts/pi-setup-backup.sh --config-dir config
+./scripts/pi-setup-backup.sh --config-dir config --skills
+
 git add -A && git commit -m "chore(setup): refresh pi config snapshot" && git push
 ```
 
@@ -338,7 +339,7 @@ Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `model
 
 ```bash
 ./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (chỉ setup)
-./scripts/pi-setup-backup.sh --config-dir config    # → ghi plain file vào config/ (để commit)
+./scripts/pi-setup-backup.sh --config-dir config --skills   # → ghi plain file vào config/ (để commit)
 ./scripts/pi-setup-backup.sh --exclude-file config/.pi-setup-exclude   # bundle đã lọc
 ./scripts/pi-setup-backup.sh --skills --hooks       # thêm skills + hooks
 ./scripts/pi-setup-backup.sh --no-statusline        # KHÔNG lấy config statusline
@@ -355,7 +356,7 @@ Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `model
 | Opt-in (mặc định **không** lấy) | Lấy gì | Ghi chú |
 |---|---|---|
 | `--auth` | `auth.json` | ⚠ **credential** — không đưa artifact lên nơi công khai |
-| `--skills` | `skills/` | dereference symlink → tự chứa (~24 MB, 108 skill) |
+| `--skills` | `skills/` | dereference symlink → tự chứa. Snapshot public chỉ giữ skill tự viết (`ak-*` bị loại) |
 | `--hooks` | thư mục `hooks/` trong `~/.pi/agent` | 544 KB; **không** đụng `~/.claude/hooks` (có `.env`); ghi đè `.pi-setup-exclude` cho đường dẫn hooks |
 | `--memory` | `memory/` | |
 | `--missions` | `missions/` | ⚠ có thể chứa tên project/khách hàng |
@@ -485,7 +486,9 @@ cd /tmp/verify-clone
 
 | Test | Kết quả |
 |---|---|
-| Backup mặc định không chứa `missions/`, `memory/`, `skills/` | ✅ chỉ 4 mục setup |
+| Backup mặc định không chứa `missions/`, `memory/`, `sessions/` | ✅ chỉ các mục setup |
+| Snapshot `--skills` giữ 18 skill tự viết, loại 105 `ak-*` | ✅ 3.4 MB, 0 thư mục `ak-*` |
+| `--memory` + `.pi-setup-exclude` | ✅ 0 file `memory/*` trong artifact |
 | Backup 2 lần → `cmp` | ✅ **byte-identical** (deterministic) |
 | Quét secret: `sk-proj-…` thật (test) | ✅ báo đúng file |
 | Quét secret: PEM key có thân base64 | ✅ báo |

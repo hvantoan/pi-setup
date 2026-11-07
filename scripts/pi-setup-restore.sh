@@ -99,7 +99,12 @@ fi
 
 # --- Xác định đích ---
 if [ "$SCRATCH" -eq 1 ]; then
-	TARGET="$(mktemp -d)/pi-agent"
+	SCRATCH_ROOT="$(mktemp -d)"
+	TARGET="$SCRATCH_ROOT/pi-agent"
+	# ~ trong external-configs.txt expand về HOME thật — trong scratch phải chuyển
+	# hướng sang home giả cùng thư mục tạm, nếu không scratch ghi đè ~/.pi-lens,
+	# ~/.config/kitty thật (và rác .bak.* trong HOME).
+	SCRATCH_HOME="$SCRATCH_ROOT/home"
 	info "→ chế độ scratch (không đụng config thật): $TARGET"
 else
 	info "→ đích: $TARGET"
@@ -183,7 +188,8 @@ if [ -f "$SRC/$EXTERNAL_MANIFEST" ]; then
 			warn "$ext_name có trong $EXTERNAL_MANIFEST nhưng thiếu trong nguồn — bỏ qua"
 			continue
 		fi
-		ext_target="${ext_dest/#\~/$HOME}"
+		if [ "$SCRATCH" -eq 1 ]; then ext_home="$SCRATCH_HOME"; else ext_home="$HOME"; fi
+		ext_target="${ext_dest/#\~/$ext_home}"
 		if [ "$DRY_RUN" -eq 1 ]; then
 			info "  [dry-run] (ngoài config dir) $ext_name → $ext_target"
 			continue

@@ -153,7 +153,8 @@ pi-setup/
 | `extensions/orca-*.ts` (3 file, 1 239 dòng) | Orca (`@orca-managed-pi-extension`) | glue code tích hợp Orca; Orca tự sinh lại khi quản lý pi |
 | `extensions/agentkit-agent/`, `extensions/agentkit-hooks-engineer/` | AgentKit (`ak`) | 1.2 MB hook đã sinh + cache chứa **path tuyệt đối** (`native-skill-paths.json` 157 KB); `ak` tự cài lại |
 | `extensions/herdr-agent-state.ts` | herdr | Header ghi *"managed by herdr; reinstalling or updating the integration overwrites this file"* → bản trong git sẽ lỗi thời |
-| `missions/`, `memory/`, `skills/` | pi / AgentKit | state theo máy, không phải setup |
+| `missions/`, `memory/` | pi | state theo máy: missions có thể chứa tên project/khách hàng, memory ghi IP nội bộ + tên DB |
+| `skills/ak-*` | AgentKit (`ak`) | 105 skill AgentKit (~18 MB); `ak` tự cài lại. Skill **tự viết** nằm trong `config/skills/` |
 | `mcp.json` | bạn (`pi mcp add`) | config MCP built-in — chứa **token thật** (`JIRA_API_TOKEN`, `JIRA_URL` nội bộ), cùng lý do như `models.json` |
 
 ### `.pi-setup-exclude`
@@ -518,7 +519,7 @@ Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `model
 
 ```bash
 ./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (chỉ setup)
-./scripts/pi-setup-backup.sh --config-dir config    # → cập nhật config/ trong repo này
+./scripts/pi-setup-backup.sh --config-dir config --skills   # → cập nhật config/ trong repo này
 ./scripts/pi-setup-backup.sh --skills --hooks       # thêm skills + hooks
 ./scripts/pi-setup-backup.sh -o ~/Desktop/pi.tar.gz
 ./scripts/pi-setup-backup.sh --dry-run
@@ -527,7 +528,7 @@ Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `model
 | Opt-in (mặc định **không** lấy) | Lấy gì | Ghi chú |
 |---|---|---|
 | `--auth` | `auth.json` | ⚠ **chứa credential** → không đưa lên nơi công khai |
-| `--skills` | `skills/` | **dereference symlink** → backup tự chứa (~24 MB, 108 skill) |
+| `--skills` | `skills/` | **dereference symlink** → backup tự chứa. Trong snapshot public chỉ giữ skill tự viết (`skills/ak-*` bị `.pi-setup-exclude` loại) |
 | `--hooks` | thư mục `hooks/` trong `~/.pi/agent` | hiện tại: 544 KB. **Không** đụng `~/.claude/hooks` (ở đó có `.env`). Ghi đè `.pi-setup-exclude` cho đường dẫn hooks |
 | `--memory` | `memory/` | |
 | `--missions` | `missions/` | ⚠ state pi-goal-x, có thể chứa tên project/khách hàng |

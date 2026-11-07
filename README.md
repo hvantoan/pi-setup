@@ -154,7 +154,8 @@ pi-setup/
 | `extensions/orca-*.ts` (3 files, 1,239 lines) | Orca (`@orca-managed-pi-extension`) | Orca integration glue; Orca regenerates it when it manages pi |
 | `extensions/agentkit-agent/`, `extensions/agentkit-hooks-engineer/` | AgentKit (`ak`) | 1.2 MB of generated hooks plus caches holding **absolute paths** (`native-skill-paths.json`, 157 KB); `ak` reinstalls them |
 | `extensions/herdr-agent-state.ts` | herdr | Header says *"managed by herdr; reinstalling or updating the integration overwrites this file"* → a copy in git goes stale |
-| `missions/`, `memory/`, `skills/` | pi / AgentKit | machine-specific state, not setup |
+| `missions/`, `memory/` | pi | machine-specific state: missions may name projects/customers, memory holds internal IPs and DB names |
+| `skills/ak-*` | AgentKit (`ak`) | 105 AgentKit skills (~18 MB); `ak` reinstalls them. **Personal** skills are in `config/skills/` |
 | `mcp.json` | you (`pi mcp add`) | built-in MCP config — contains **real tokens** (`JIRA_API_TOKEN`, internal `JIRA_URL`), same reason as `models.json` |
 
 ### `.pi-setup-exclude`
@@ -521,7 +522,7 @@ By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models
 
 ```bash
 ./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (setup only)
-./scripts/pi-setup-backup.sh --config-dir config    # → update config/ inside this repo
+./scripts/pi-setup-backup.sh --config-dir config --skills   # → update config/ inside this repo
 ./scripts/pi-setup-backup.sh --skills --hooks       # add skills + hooks
 ./scripts/pi-setup-backup.sh -o ~/Desktop/pi.tar.gz
 ./scripts/pi-setup-backup.sh --dry-run
@@ -530,7 +531,7 @@ By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models
 | Opt-in (NOT included by default) | What it takes | Notes |
 |---|---|---|
 | `--auth` | `auth.json` | ⚠ **contains credentials** → never publish the artifact |
-| `--skills` | `skills/` | **dereferences symlinks** → self-contained backup (~24 MB, 108 skills) |
+| `--skills` | `skills/` | **dereferences symlinks** → self-contained backup. In the public repo snapshot only personal skills are kept (`skills/ak-*` is pruned by `.pi-setup-exclude`) |
 | `--hooks` | `hooks/` dirs under `~/.pi/agent` | currently 544 KB. Does **not** touch `~/.claude/hooks` (that one holds `.env`). Overrides `.pi-setup-exclude` for hook paths |
 | `--memory` | `memory/` | |
 | `--missions` | `missions/` | ⚠ pi-goal-x state, may contain project/customer names |

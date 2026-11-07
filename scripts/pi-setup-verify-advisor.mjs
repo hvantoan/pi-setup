@@ -252,7 +252,7 @@ if (schema.size === 0) {
 	process.exit(2);
 }
 
-const JS_TYPE = { string: "string", boolean: "boolean", number: "number", object: "object" };
+const JS_TYPE = { string: "string", boolean: "boolean", number: "number", object: "object", array: "array" };
 
 function jsTypeOf(value) {
 	if (value === null) return "null";

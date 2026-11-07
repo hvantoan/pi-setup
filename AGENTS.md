@@ -13,7 +13,8 @@ statusline, model-fallback, advisor config. Public mirror of
   installed `pi-advisor-flow` CONFIG_SCHEMA (unknown keys are silently ignored)
 - `scripts/pi-setup-patch-extensions.mjs` — patches third-party extension files
 - `config/` — the mirrored setup; `config/.pi-setup-exclude` decides what a
-  backup must NOT copy in (secrets, tool-generated files)
+  backup must NOT copy in (secrets, tool-generated files). Includes `skills/`
+  (personal skills only — `skills/ak-*` is AgentKit, reinstalled by `ak`)
 - `backups/pi-setup-portable.tar.gz` — the tracked public bundle
 - `fonts/`, `screenshots/` — assets for the README
 
@@ -25,7 +26,7 @@ statusline, model-fallback, advisor config. Public mirror of
 
 # Real restore / backup / verify
 ./scripts/pi-setup-restore.sh --install --verify
-./scripts/pi-setup-backup.sh --config-dir config      # refresh the snapshot
+./scripts/pi-setup-backup.sh --config-dir config --skills   # refresh the snapshot (+ personal skills)
 ./scripts/pi-setup-backup.sh                           # build portable bundle
 node scripts/pi-setup-verify-advisor.mjs --live        # repo vs live advisor.json
 ```
