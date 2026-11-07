@@ -167,6 +167,8 @@ pi-setup/
 
 > Ở chế độ `--config-dir`, file exclude được tự dò từ `config/.pi-setup-exclude`; truyền thẳng đường dẫn chỉ để lệnh trên tự đứng một mình, không phụ thuộc cwd/thứ tự dò.
 
+**`settings.skills` portable.** Bản live liệt kê override bằng path tuyệt đối (`+/home/<bạn>/.agents/skills/understand`, `!/home/<bạn>/.agents/skills/ak-*`). Backup đổi chúng thành `~/...` trong snapshot — pi expand `~` khi so khớp (đã kiểm với `dist/utils/paths.js`), nên file restore chạy y hệt mà không chết khi username khác. Bản thân skill `understand-*` vẫn do plugin quản lý (`~/.understand-anything/repo`), như `ak-*`: snapshot giữ chúng **đang bật**, không chép nội dung.
+
 Từ bản hiện tại, cùng file đó cũng dùng được cho **chế độ tarball** qua `--exclude-file`:
 
 ```bash

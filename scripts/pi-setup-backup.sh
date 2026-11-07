@@ -342,6 +342,26 @@ has_pem_block() { # $1 = file
 	awk '/-----BEGIN [A-Z ]*PRIVATE KEY-----/ { getline; if ($0 ~ /^[A-Za-z0-9+\/]{20,}={0,2}$/) { found=1; exit } } END { exit found ? 0 : 1 }' "$1"
 }
 
+# --- Chuẩn hoá settings.json cho portable ---
+# Key `skills` chứa path tuyệt đối của máy này ($HOME/...). Đổi sang ~/... (pi tự
+# expand: dist/utils/paths.js normalizePath) để snapshot chạy ở máy khác username.
+# Chỉ thay đúng các chuỗi đó, phần còn lại của file giữ nguyên → diff không nhiễu.
+portable_settings() { # $1 = file settings.json
+	[ -f "$1" ] || return 0
+	command -v node >/dev/null 2>&1 || {
+		warn "không có node — bỏ qua chuẩn hoá $1"
+		return 0
+	}
+	node -e '
+const fs = require("fs"), f = process.argv[1], home = process.env.HOME;
+if (!home) process.exit(0);
+let s = fs.readFileSync(f, "utf8");
+const before = s;
+for (const p of ["+", "!", "-", ""]) s = s.split("\"" + p + home + "/").join("\"" + p + "~/");
+if (s !== before) fs.writeFileSync(f, s);
+' "$1"
+}
+
 # --- Quét secret trên nội dung sẽ đóng gói ---
 scan_secrets() { # $1 = thư mục chứa nội dung
 	local found=0 skipped=0 f hits kept h
@@ -493,7 +513,8 @@ if [ -n "$CONFIG_DIR" ]; then
 		fi
 	done
 
-	# config nằm ngoài config dir: copy vào mirror + ghi manifest
+	portable_settings "$CONFIG_DIR/settings.json"
+
 	ext_collect
 	for i in "${!EXT_NAME[@]}"; do
 		cp -p "${EXT_SRC[$i]}" "$CONFIG_DIR/${EXT_NAME[$i]}"
@@ -627,11 +648,28 @@ for pat in "${EXCLUDES[@]:-}"; do
 	EXCLUDE_OPTS+=("--exclude=$pat")
 done
 
+# settings.json được stage riêng để chuẩn hoá $HOME → ~ (portable): bỏ nó khỏi
+# danh sách include của tar rồi thêm bản staged (không dùng --exclude, vì tar áp
+# pattern cho cả member được thêm sau → bundle mất settings.json).
+SET_STAGE=""
+TAR_INCLUDE=()
+for item in "${INCLUDE[@]}"; do
+	if [ "$item" != "settings.json" ]; then TAR_INCLUDE+=("$item"); fi
+done
+if [ -f "$AGENT_DIR/settings.json" ]; then
+	SET_STAGE="$(mktemp -d)"
+	CLEANUP_DIRS+=("$SET_STAGE")
+	cp -p "$AGENT_DIR/settings.json" "$SET_STAGE/settings.json"
+	portable_settings "$SET_STAGE/settings.json"
+	touch -t 200001010000 "$SET_STAGE/settings.json" # giữ bundle tất định
+	TAR_EXTRA+=(-C "$SET_STAGE" settings.json)
+fi
+
 # Lưu ý: không dùng "${EXCLUDE_OPTS[@]:-}" — array rỗng sẽ thành 1 phần tử '' và tar báo lỗi.
 if [ "${#EXCLUDE_OPTS[@]}" -gt 0 ]; then
-	tar "${TAR_OPTS[@]}" "${EXCLUDE_OPTS[@]}" -C "$AGENT_DIR" "${INCLUDE[@]}" "${TAR_EXTRA[@]}" | gzip -n >"$TMP"
+	tar "${TAR_OPTS[@]}" "${EXCLUDE_OPTS[@]}" -C "$AGENT_DIR" "${TAR_INCLUDE[@]}" "${TAR_EXTRA[@]}" | gzip -n >"$TMP"
 else
-	tar "${TAR_OPTS[@]}" -C "$AGENT_DIR" "${INCLUDE[@]}" "${TAR_EXTRA[@]}" | gzip -n >"$TMP"
+	tar "${TAR_OPTS[@]}" -C "$AGENT_DIR" "${TAR_INCLUDE[@]}" "${TAR_EXTRA[@]}" | gzip -n >"$TMP"
 fi
 tar -xzf "$TMP" -C "$SCAN_DIR"
 scan_secrets "$SCAN_DIR" || true

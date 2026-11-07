@@ -168,6 +168,8 @@ pi-setup/
 
 > In `--config-dir` mode the exclude file is auto-discovered at `config/.pi-setup-exclude`; passing it explicitly just makes the command self-contained regardless of cwd and discovery order.
 
+**Portable `settings.skills`.** The live file lists skill overrides with absolute paths (`+/home/<you>/.agents/skills/understand`, `!/home/<you>/.agents/skills/ak-*`). Backup rewrites those to `~/...` in the snapshot — pi expands `~` when matching (verified against `dist/utils/paths.js`), so the restored file behaves identically while surviving a different username. The `understand-*` skills themselves stay plugin-managed (`~/.understand-anything/repo`), like `ak-*`: the snapshot keeps them *enabled*, it does not ship them.
+
 The same file also works for **tarball mode** via `--exclude-file`:
 
 ```bash
