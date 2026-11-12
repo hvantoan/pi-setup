@@ -23,5 +23,5 @@
   "advisorJevModel": "openrouter/typesafe/jev-1.13",
   "advisorJevFilterEnabled": true,
   "executorEffort": "medium",
-  "advisorJevClassifier": "9router/oc/jev-1.13-free"
+  "advisorJevClassifier": "9router/openrouter/typesafe/jev-1.13"
 }
