@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "1.5.0",
+  "lastChangelogVersion": "1.5.2",
   "theme": "light/dark",
   "defaultProvider": "9router",
   "defaultModel": "ocg/deepseek-v4.1-flash",
@@ -210,14 +210,14 @@
   },
   "extensionChangelogVersions": {
     "{\"source\":\"npm:pi-web-access\",\"scope\":\"user\"}": "0.47.0",
-    "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.86.0",
+    "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.88.0",
     "{\"source\":\"npm:pi-memory\",\"scope\":\"user\"}": "0.4.2",
     "{\"source\":\"npm:pi-footer\",\"scope\":\"user\"}": "0.5.1",
-    "{\"source\":\"npm:pi-model-fallback\",\"scope\":\"user\"}": "0.5.11",
+    "{\"source\":\"npm:pi-model-fallback\",\"scope\":\"user\"}": "0.6.1",
     "{\"source\":\"npm:pi-advisor-flow\",\"scope\":\"user\"}": "0.14.4",
     "{\"source\":\"npm:@tmustier/pi-session-recap\",\"scope\":\"user\"}": "0.6.1",
-    "{\"source\":\"npm:pi-lens\",\"scope\":\"user\"}": "4.4.9",
+    "{\"source\":\"npm:pi-lens\",\"scope\":\"user\"}": "4.4.12",
     "{\"source\":\"npm:pi-impeccable\",\"scope\":\"user\"}": "0.1.0",
-    "{\"source\":\"npm:@narumitw/pi-usage\",\"scope\":\"user\"}": "0.69.2"
+    "{\"source\":\"npm:@narumitw/pi-usage\",\"scope\":\"user\"}": "0.69.3"
   }
 }

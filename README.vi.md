@@ -132,7 +132,6 @@ pi-setup/
     ├── advisor.json                config pi-advisor-flow (ở gốc config dir)
     ├── pi-lens-config.json          config pi-lens — nằm ở ~/.pi-lens/ NGOÀI config dir
     ├── external-configs.txt        manifest: file nào đặt về đâu khi restore
-    ├── APPEND_SYSTEM.md            system prompt phụ
     ├── models.json                 provider 9router (baseUrl `http://127.0.0.1:20128/v1`, key qua `$NINEROUTER_API_KEY`)
     ├── models-store.json           catalog model (khỏi chờ refresh 4h)
     ├── kitty.conf                  config terminal kitty (ở ~/.config/kitty/)
@@ -215,7 +214,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **11 file** (mục + config ngoài + manifest) — `settings.json` (21 package), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts` và `model-fallback/config.json`.
+Bundle sẵn để tải, khỏi phải clone rồi tự tạo: **10 file** (mục + config ngoài + manifest) — `settings.json` (22 package), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts` và `model-fallback/config.json`.
 
 Đây là bundle đầy đủ theo mặc định của script, **đã lọc** qua `.pi-setup-exclude` để không mang lên repo public những thứ chỉ thuộc về máy:
 
@@ -515,7 +514,7 @@ node scripts/pi-setup-verify-advisor.mjs --file <path>
 
 ### `pi-setup-backup.sh`
 
-Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `mcp.json`, `model-fallback/config.json`, `extensions/` — và **luôn lấy cả statusline** (`extensions/pi-footer.json` nằm trong `extensions/`). `mcp.json` và `models.json` sau đó lại bị `.pi-setup-exclude` loại mỗi khi bạn build bundle **public**.
+Mặc định chỉ lấy **setup**: `settings.json`, `models.json`, `models-store.json`, `mcp.json`, `model-fallback/config.json`, `extensions/` — và **luôn lấy cả statusline** (`extensions/pi-footer.json` nằm trong `extensions/`). `mcp.json` và `models.json` sau đó lại bị `.pi-setup-exclude` loại mỗi khi bạn build bundle **public**.
 
 > `models.json` trong bundle mang cùng placeholder `$NINEROUTER_API_KEY` như `config/`. Bundle bạn tự tạo copy file live **nguyên bản** — nếu `models.json` của bạn còn key thật thì script quét secret sẽ cảnh báo trước khi bạn publish.
 

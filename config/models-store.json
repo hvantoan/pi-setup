@@ -1303,7 +1303,7 @@
     ],
     "lastModified": 1793046869000,
     "etag": "W/\"95a2e44a856349a2e4505efd9edc3494\"",
-    "checkedAt": 1794023030163
+    "checkedAt": 1794493604420
   },
   "azure-openai-responses": {
     "models": [
@@ -3024,16 +3024,16 @@
           }
         ],
         "routing": {
-          "gpt-oss-120b": {
-            "off": "gpt-oss-120b-medium",
+          "claude-sonnet-4-6": {
+            "off": "claude-sonnet-4-6",
             "routing": {
-              "minimal": "gpt-oss-120b-medium",
-              "low": "gpt-oss-120b-medium",
-              "medium": "gpt-oss-120b-medium",
-              "high": "gpt-oss-120b-medium",
-              "xhigh": "gpt-oss-120b-medium"
+              "minimal": "claude-sonnet-4-6",
+              "low": "claude-sonnet-4-6",
+              "medium": "claude-sonnet-4-6",
+              "high": "claude-sonnet-4-6",
+              "xhigh": "claude-sonnet-4-6"
             },
-            "defaultRequestId": "gpt-oss-120b-medium"
+            "defaultRequestId": "claude-sonnet-4-6"
           },
           "gemini-3.8-flash": {
             "off": "gemini-3.8-flash-low",
@@ -3046,16 +3046,27 @@
             },
             "defaultRequestId": "gemini-3.8-flash-low"
           },
-          "claude-sonnet-4-6": {
-            "off": "claude-sonnet-4-6",
+          "gemini-4-argon-disabled": {
+            "off": "gemini-4-argon-disabled",
             "routing": {
-              "minimal": "claude-sonnet-4-6",
-              "low": "claude-sonnet-4-6",
-              "medium": "claude-sonnet-4-6",
-              "high": "claude-sonnet-4-6",
-              "xhigh": "claude-sonnet-4-6"
+              "minimal": "gemini-4-argon-disabled",
+              "low": "gemini-4-argon-disabled",
+              "medium": "gemini-4-argon-disabled",
+              "high": "gemini-4-argon-disabled",
+              "xhigh": "gemini-4-argon-disabled"
             },
-            "defaultRequestId": "claude-sonnet-4-6"
+            "defaultRequestId": "gemini-4-argon-disabled"
+          },
+          "gpt-oss-120b": {
+            "off": "gpt-oss-120b-medium",
+            "routing": {
+              "minimal": "gpt-oss-120b-medium",
+              "low": "gpt-oss-120b-medium",
+              "medium": "gpt-oss-120b-medium",
+              "high": "gpt-oss-120b-medium",
+              "xhigh": "gpt-oss-120b-medium"
+            },
+            "defaultRequestId": "gpt-oss-120b-medium"
           },
           "claude-opus-4-6": {
             "off": "claude-opus-4-6-thinking",
@@ -3067,21 +3078,10 @@
               "xhigh": "claude-opus-4-6-thinking"
             },
             "defaultRequestId": "claude-opus-4-6-thinking"
-          },
-          "gemini-4-argon-disabled": {
-            "off": "gemini-4-argon-disabled",
-            "routing": {
-              "minimal": "gemini-4-argon-disabled",
-              "low": "gemini-4-argon-disabled",
-              "medium": "gemini-4-argon-disabled",
-              "high": "gemini-4-argon-disabled",
-              "xhigh": "gemini-4-argon-disabled"
-            },
-            "defaultRequestId": "gemini-4-argon-disabled"
           }
         }
       },
-      "checkedAt": 1794039057737,
+      "checkedAt": 1794496084787,
       "modelEnums": {
         "gemini-3.8-flash-tiered": "MODEL_PLACEHOLDER_M322",
         "gemini-2.5-flash-lite": "MODEL_GOOGLE_GEMINI_2_5_FLASH_LITE",
@@ -3102,7 +3102,8 @@
         "gemini-2.5-flash": "MODEL_GOOGLE_GEMINI_2_5_FLASH",
         "chat_23310": "MODEL_CHAT_23310",
         "gemini-4-argon-disabled": "MODEL_PLACEHOLDER_M421",
-        "gemini-2.5-flash-thinking": "MODEL_GOOGLE_GEMINI_2_5_FLASH_THINKING"
+        "gemini-2.5-flash-thinking": "MODEL_GOOGLE_GEMINI_2_5_FLASH_THINKING",
+        "gemini-4-carbon-disabled": "MODEL_PLACEHOLDER_M670"
       },
       "schemaVersion": 2,
       "credentialKey": "c59e140e03969565019e3a7d826f53ea1f9b153b9931d9e809ba0e33cb442387"

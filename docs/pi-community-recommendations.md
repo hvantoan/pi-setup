@@ -242,7 +242,7 @@ Khoảng trống đáng cân nhắc, theo thứ tự giá trị:
 1. **Không có lớp permission/sandbox nào.** Đây là khuyến nghị an toàn được nhắc nhiều nhất và setup này hiện chạy YOLO hoàn toàn. Thử `pi-sandbox` (cần `ripgrep`, Linux) hoặc `@gotgenes/pi-permission-system` (fail-closed, deny `.env`).
 2. **MCP đang đi qua `pi-mcp-adapter` trong khi pi 1.0 đã có MCP + Codemode tích hợp.** Chính tài liệu so sánh của adapter nói chi phí có thể tới 7× nếu không dùng scriptMode — nên đo lại trên vài session thật trước khi quyết định giữ.
 3. **`pi-subagents` đang bật nhưng bằng chứng ổn định là trước 1.0.** Giữ version pin và thử lại tình huống "subagent treo" trước khi dùng cho việc dài.
-4. **Chưa có bước duyệt plan trước khi sửa file** ngoài `rpiv-ask-user-question` + `pi-goal-x`; nếu muốn theo "caveman workflow", thêm quy ước `PLAN.md` vào `AGENTS.md`/`APPEND_SYSTEM.md` (repo đã có `config/APPEND_SYSTEM.md`) — đây là thay đổi rẻ nhất và không thêm dependency.
+4. **Chưa có bước duyệt plan trước khi sửa file** ngoài `rpiv-ask-user-question` + `pi-goal-x`; nếu muốn theo "caveman workflow", thêm quy ước `PLAN.md` vào `AGENTS.md`/`APPEND_SYSTEM.md` (đã bỏ `APPEND_SYSTEM.md` khỏi setup; đặt quy ước trong `AGENTS.md` là đủ) — đây là thay đổi rẻ nhất và không thêm dependency.
 5. **`pi-rtk-optimizer` không có trong list** — đúng tinh thần cảnh báo của cộng đồng, không cần thêm.
 6. **Chỉ giữ một hệ bộ nhớ** (`pi-memory` đang có; đừng thêm `pi-observational-memory` cùng lúc).
 

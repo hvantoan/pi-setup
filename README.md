@@ -133,7 +133,6 @@ pi-setup/
     ├── advisor.json                pi-advisor-flow config (at the config-dir root)
     ├── pi-lens-config.json          pi-lens config — lives in ~/.pi-lens/, OUTSIDE the config dir
     ├── external-configs.txt        manifest: which file goes where on restore
-    ├── APPEND_SYSTEM.md            extra system prompt
     ├── models.json                 provider 9router (baseUrl `http://127.0.0.1:20128/v1`, key via `$NINEROUTER_API_KEY`)
     ├── models-store.json           model catalog (saves the 4h refresh wait)
     ├── kitty.conf                  kitty terminal config (lives in ~/.config/kitty/)
@@ -216,7 +215,7 @@ EXTERNAL_CONFIGS=(
 
 ### `backups/pi-setup-portable.tar.gz`
 
-A ready-made bundle so you don't have to clone and run the backup yourself: **11 files** — `settings.json` (21 packages), `APPEND_SYSTEM.md`, `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts`, and `model-fallback/config.json`.
+A ready-made bundle so you don't have to clone and run the backup yourself: **10 files** — `settings.json` (22 packages), `models-store.json`, `advisor.json`, `pi-lens-config.json`, `kitty.conf`, `external-configs.txt`, `extensions/pi-footer.json`, `extensions/pi-footer-cache-tps.ts`, `extensions/compaction-policy.ts`, and `model-fallback/config.json`.
 
 It is the script's full default bundle, **filtered** through `.pi-setup-exclude` so machine-only material never reaches this public repo:
 
@@ -518,7 +517,7 @@ node scripts/pi-setup-verify-advisor.mjs --file <path>
 
 ### `pi-setup-backup.sh`
 
-By default it takes only **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models.json`, `models-store.json`, `mcp.json`, `model-fallback/config.json`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`). `mcp.json` and `models.json` are then dropped again by `.pi-setup-exclude` whenever you build the **public** bundle.
+By default it takes only **setup**: `settings.json`, `models.json`, `models-store.json`, `mcp.json`, `model-fallback/config.json`, `extensions/` — and it **always includes the statusline** (`extensions/pi-footer.json` lives inside `extensions/`). `mcp.json` and `models.json` are then dropped again by `.pi-setup-exclude` whenever you build the **public** bundle.
 
 > The bundled `models.json` carries the same `$NINEROUTER_API_KEY` placeholder as `config/`. A bundle you build yourself copies the live file **verbatim** — if your `models.json` still holds a literal key, the script's secret scan warns before you publish it.
 

@@ -43,7 +43,6 @@ Cơ chế này có trong `docs/packages.md` của pi và đã được kiểm ch
 | Mục trong `~/.pi/agent/` | Size | Vào repo? | Lý do |
 |---|---|---|---|
 | `settings.json` | 4 KB | ✅ **bắt buộc** | 20 packages, theme, compaction, thinkingBudgets, retry |
-| `APPEND_SYSTEM.md` | 4 KB | ✅ | system prompt phụ |
 | `models.json` | 1.6 KB | ❌ **credential** | khai báo provider **9router** (baseUrl `http://127.0.0.1:20128/v1`, `api: openai-completions`) + model `ocg/deepseek-v4.1-flash` (`contextWindow` 1.000.000, `maxTokens` 64.000 — khớp `context_length`/`max_completion_tokens` mà gateway báo). **Bản live chứa `apiKey` dạng literal** (bản commit cũ dùng `$NINEROUTER_API_KEY`, nên lịch sử git vẫn sạch) → `models.json` nằm trong `.pi-setup-exclude`, máy mới tự khai lại provider. Không có file này thì `9router` là provider lạ, `pi --list-models` không thấy model nào |
 | `extensions/` | 1.4 MB | ✅ (lọc) | extension tự viết local (`pi-footer.json`, `pi-footer-cache-tps.ts`, `compaction-policy.ts`). `orca-*.ts` (Orca sinh), `agentkit-*` (AgentKit sinh) và `herdr-agent-state.ts` (herdr sinh) bị loại — xem `.pi-setup-exclude` |
 | `extensions/pi-footer.json` | 1.3 KB | ✅ **mặc định** | layout statusline (gồm context bar) — opt-out bằng `--no-statusline` |
@@ -85,7 +84,6 @@ pi-setup/
 └── config/                          ← snapshot setup, đọc/diff được
     ├── .pi-setup-exclude           ← glob loại trừ (backup tôn trọng file này)
     ├── settings.json
-    ├── APPEND_SYSTEM.md
     ├── advisor.json
     ├── models-store.json
     ├── pi-lens-config.json         ← ~/.pi-lens/config.json (ngoài config dir)
@@ -335,7 +333,7 @@ node scripts/pi-setup-patch-extensions.mjs --check   # chỉ báo trạng thái:
 
 ### `scripts/pi-setup-backup.sh`
 
-Mặc định chỉ lấy **setup**: `settings.json`, `APPEND_SYSTEM.md`, `models-store.json`, `models.json`, `mcp.json`, `model-fallback/config.json`, `extensions/` (kèm luôn statusline `extensions/pi-footer.json`) — `models.json` và `mcp.json` rồi lại bị `.pi-setup-exclude` loại khi build bundle public (xem *MCP servers (built-in)*).
+Mặc định chỉ lấy **setup**: `settings.json`, `models-store.json`, `models.json`, `mcp.json`, `model-fallback/config.json`, `extensions/` (kèm luôn statusline `extensions/pi-footer.json`) — `models.json` và `mcp.json` rồi lại bị `.pi-setup-exclude` loại khi build bundle public (xem *MCP servers (built-in)*).
 
 ```bash
 ./scripts/pi-setup-backup.sh                       # → ./pi-setup-portable.tar.gz (chỉ setup)
