@@ -1,5 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-
+import { createRequire } from "node:module";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 type JsonRecord = Record<string, unknown>;
 
 interface ClassifierResult {
@@ -128,44 +131,107 @@ const classifySystemOne = async (
 
 const ZERO_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
 
+type ProviderModel =
+  | {
+      type: "chat";
+      id: string;
+      name: string;
+      api: "openai-completions";
+      baseUrl: string;
+      input: ("text" | "image")[];
+      reasoning: boolean;
+      cost: typeof ZERO_COST;
+      contextWindow: number;
+      maxTokens: number;
+    }
+  | {
+      type: "classifier";
+      id: string;
+      name: string;
+      api: string;
+      baseUrl: string;
+      input: ("text" | "image")[];
+      cost: typeof ZERO_COST;
+      contextWindow: number;
+    };
 
-const chatModel = (id: string, contextWindow: number, maxTokens: number, vision = false, reasoning = false) => ({
-  type: "chat" as const,
+const chatModel = (
+  id: string,
+  contextWindow: number,
+  maxTokens: number,
+  vision = false,
+  reasoning = false
+): ProviderModel => ({
+  type: "chat",
   id,
   name: id,
   api: "openai-completions",
   baseUrl: PROVIDER_BASE_URL,
-  input: (vision ? ["text", "image"] : ["text"]) as ("text" | "image")[],
+  input: vision ? ["text", "image"] : ["text"],
   reasoning,
   cost: ZERO_COST,
   contextWindow,
   maxTokens,
 });
 
-const classifierModel = (id: string, contextWindow = 32000) => ({
-  type: "classifier" as const,
+const classifierModel = (id: string, contextWindow = 32000): ProviderModel => ({
+  type: "classifier",
   id,
   name: `${id} (9router)`,
   api: SYSTEM_ONE_API,
   baseUrl: PROVIDER_BASE_URL,
-  input: ["text"] as ("text" | "image")[],
+  input: ["text"],
   cost: ZERO_COST,
   contextWindow,
 });
 
 /**
- * Static baseline — everything needed before the first successful
- * refreshModels, and the fallback when 9router is unreachable. The
- * classifier entry must be static too, or Jev screening loses its ref
- * whenever the gateway is down at startup.
+ * Last-resort seed: used only when the YAML cache is missing AND unreadable —
+ * e.g. first install before the first successful refresh. Once refreshModels
+ * fetches /v1/models the cache file replaces this list permanently.
  */
-const STATIC_MODELS = [
-  chatModel("ocg/deepseek-v4.1-flash", 1000000, 64000),
-  chatModel("ocg/muse-spark-1.3-contributor", 1000000, 64000),
+const SEED_MODELS: ProviderModel[] = [
+  chatModel("ocg/deepseek-v4.1-flash", 1000000, 64000, false, true),
+  chatModel("ocg/muse-spark-1.3-contributor", 1000000, 64000, false, true),
   chatModel("openrouter/openai/text-embedding-3-large", 200000, 64000),
   classifierModel("openrouter/typesafe/jev-1.13"),
   classifierModel("oc/jev-1.13-free"),
 ];
+
+// --- models.yaml cache -------------------------------------------------------
+
+// Cache inside the sibling npm/ dir — anchored to this file's location so it
+// survives PI_CODING_AGENT_DIR relocations — and doubly serves as a node_modules
+// anchor for resolving the bundled `yaml` package.
+const NPM_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "npm");
+const CACHE_PATH = join(NPM_DIR, "models.yaml");
+
+const yaml = createRequire(join(NPM_DIR, "noop.js"))("yaml") as typeof import("yaml");
+const loadCachedModels = (): ProviderModel[] => {
+  try {
+    const doc = yaml.parse(readFileSync(CACHE_PATH, "utf8")) as ModelsYamlDoc | null;
+    if (doc?.models && doc.models.length > 0) return doc.models;
+  } catch {
+    /* cache absent/corrupt — seed takes over */
+  }
+  return SEED_MODELS;
+};
+
+/** Persist the fetched catalog so the next startup skips code changes. */
+const saveCachedModels = (models: ProviderModel[]) => {
+  try {
+    mkdirSync(dirname(CACHE_PATH), { recursive: true });
+    writeFileSync(
+      CACHE_PATH,
+      yaml.stringify({ fetchedAt: new Date().toISOString(), models }),
+      "utf8"
+    );
+  } catch (error) {
+    console.error("9router models cache write failed:", error);
+  }
+};
+
+const STATIC_MODELS: ProviderModel[] = loadCachedModels();
 
 interface OpenAIModelEntry {
   id: string;
@@ -182,8 +248,8 @@ interface OpenAIModelEntry {
 /**
  * Dynamic catalog: GET /v1/models (OpenAI-standard, which 9router serves),
  * mapped to chat models; ids matching the Jev decision family become
- * `typesafe-system-one` classifiers instead. Returns the static baseline
- * when the gateway is unreachable so 9router stays usable offline.
+ * `typesafe-system-one` classifiers instead. Successful fetches persist to
+ * models.yaml; failures return the last cached (or seed) catalog.
  */
 const refreshModels = async (context: RefreshContextShape) => {
   const baseUrl = (context.baseUrl ?? PROVIDER_BASE_URL).replace(/\/+$/u, "");
@@ -201,7 +267,7 @@ const refreshModels = async (context: RefreshContextShape) => {
     const entries = body.data ?? [];
     if (entries.length === 0) return STATIC_MODELS;
 
-    const models: typeof STATIC_MODELS = [];
+    const models: ProviderModel[] = [];
     for (const entry of entries) {
       // jev-prefixed ids answer the TypeSafe System One contract on /v1/systemone.
       if (/jev/i.test(entry.id)) {
@@ -218,8 +284,14 @@ const refreshModels = async (context: RefreshContextShape) => {
         );
       }
     }
+    // Keep seed classifiers alive even if the gateway drops jev ids from
+    // /v1/models — advisor Jev screening must never silently lose its refs.
+    const seen = new Set(models.map((m) => m.id));
+    for (const m of SEED_MODELS) if (m.type === "classifier" && !seen.has(m.id)) models.push(m);
+    saveCachedModels(models);
     return models;
-  } catch {
+  } catch (error) {
+    console.error("9router model refresh failed, using cached catalog:", error);
     return STATIC_MODELS;
   }
 };
@@ -232,10 +304,11 @@ const refreshModels = async (context: RefreshContextShape) => {
  * plus `refreshModels` so new upstream models appear without config edits.
  *
  * Registered `models` lists replace the provider's whole list, so the chat
- * models from models.json are re-declared here as the static baseline.
- * Registering the classifier in models.json instead would silently produce a
- * chat model — `modelFromJson` ignores `type` — and the registry dispatch
- * needs the `classifiers` map only this path accepts.
+ * models from models.json are re-declared via the models.yaml cache (seeded
+ * from code only on first run). Registering the classifier in models.json
+ * instead would silently produce a chat model — `modelFromJson` ignores
+ * `type` — and the registry dispatch needs the `classifiers` map only this
+ * path accepts.
  *
  * pi-advisor-flow's Jev screening resolves the classifier through pi's
  * registry, so authentication reuses the provider's models.json apiKey — no
