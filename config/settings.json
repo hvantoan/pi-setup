@@ -58,7 +58,7 @@
     "mermaid": "streaming"
   },
   "images": {
-    "blockImages": true
+    "blockImages": false
   },
   "skills": [
     "!**/.agents/**",
@@ -213,7 +213,7 @@
     "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.88.0",
     "{\"source\":\"npm:pi-memory\",\"scope\":\"user\"}": "0.4.2",
     "{\"source\":\"npm:pi-footer\",\"scope\":\"user\"}": "0.5.1",
-    "{\"source\":\"npm:pi-model-fallback\",\"scope\":\"user\"}": "0.6.1",
+    "{\"source\":\"npm:pi-model-fallback\",\"scope\":\"user\"}": "0.6.2",
     "{\"source\":\"npm:pi-advisor-flow\",\"scope\":\"user\"}": "0.14.4",
     "{\"source\":\"npm:@tmustier/pi-session-recap\",\"scope\":\"user\"}": "0.6.1",
     "{\"source\":\"npm:pi-lens\",\"scope\":\"user\"}": "4.4.12",
