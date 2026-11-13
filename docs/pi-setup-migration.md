@@ -547,6 +547,8 @@ Config toàn cục ở `~/.pi/agent/advisor.json` — ở **gốc** config dir, 
 
 Extension này công bố thêm 2 status key `advisor-scout` + `advisor-usage`; cả hai đã vào `hiddenKeys` và có widget `external-status` inline → statusline vẫn **3 hàng** kể cả khi Advisor đang chạy (đã test với cả 11 key cùng có giá trị).
 
+Từ 2026-11-13, `advisor.json` có thêm `"advisorJevTurnGateEveryTurns": 5` — turn gate: cứ 5 turn không consult thì Jev classifier (`advisorJevClassifier`) quyết định có chạy proactive consultation hay không. Đi kèm, `APPEND_SYSTEM.md` **được snapshot lại** (đã bỏ khỏi `.pi-setup-exclude`): nội dung là system rule cho model biết có tool `ask_advisor` / `record_advisor_outcome` và bắt gọi định kỳ + ghi outcome khi reject. Cả hai đều chỉ có hiệu lực khi `pi-advisor-flow` còn cài — đừng gỡ extension này.
+
 **`@tmustier/pi-session-recap` không có config/state.** Không đọc-ghi file nào trong `~/.pi/agent/` nên không cần thêm mục nào vào backup. Nó công bố 1 status key `session-recap` (chỉ khi đang soạn recap) — đã nằm trong `hiddenKeys` + có widget inline, nên statusline giữ 3 hàng.
 
 > tmux: cần `set -g focus-events on` trong `~/.tmux.conf` rồi `tmux source-file ~/.tmux.conf` thì extension mới biết bạn đã quay lại.

@@ -47,4 +47,3 @@ skills/ak-*
 # memory/ không lên repo public: MEMORY.md/SCRATCHPAD.md ghi IP nội bộ, tên DB,
 # chi tiết auth của project thật. `--memory` vẫn dùng được cho tarball riêng.
 memory/*
-APPEND_SYSTEM.md

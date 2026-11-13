@@ -1,5 +1,6 @@
 {
   "alwaysOn": true,
+  "advisorJevTurnGateEveryTurns": 5,
   "advisorOutcomeLogging": false,
   "advisorScoutEnabled": true,
   "showUsageFooter": true,
