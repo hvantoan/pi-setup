@@ -14,7 +14,7 @@
   "advisorModelWhitelist": [],
   "advisorSessionSummary": true,
   "advisorScoutTimeoutMs": 30000,
-  "executor": "9router/ocg/muse-spark-1.3-contributor",
+  "executor": "9router/ocg/deepseek-v4.1-flash",
   "advisorEffort": "high",
   "advisorLoopThreshold": 3,
   "advisorDisableSameModel": false,

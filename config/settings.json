@@ -58,7 +58,7 @@
     "mermaid": "streaming"
   },
   "images": {
-    "blockImages": false
+    "blockImages": true
   },
   "skills": [
     "!**/.agents/**",
